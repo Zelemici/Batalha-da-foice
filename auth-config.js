@@ -1,5 +1,6 @@
-// Chave Web do Firebase: identificador público, não é senha.
-// A autenticação e as permissões são verificadas no servidor.
+// Configuração pública do Firebase Authentication para o site BDF.
+// A API Key Web NÃO concede acesso administrativo por si só.
+// O servidor valida o token Firebase e o UID autorizado em BDF_ADMIN_UID.
 window.BDF_AUTH = {
-  firebaseApiKey: "COLE_A_CHAVE_WEB_DO_FIREBASE_AQUI"
+  firebaseApiKey: "AIzaSyB8sIMqI0EwfbP3X07vbgrqgBOAukaFBe8"
 };
