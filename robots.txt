@@ -1,3 +1,2 @@
 User-agent: *
 Allow: /
-Sitemap: https://zelemici.github.io/Batalha-da-foice/sitemap.xml

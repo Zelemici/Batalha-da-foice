@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const dir=new URL('../',import.meta.url);
+const core=await import(new URL('functions/api/_lib.js',dir));
+const data=JSON.parse(fs.readFileSync(new URL('data.json',dir)));
+assert.equal(data.data.length,29);
+const total=data.data.reduce((a,m)=>a+Object.values(m.titles||{}).reduce((x,y)=>x+Number(y||0),0)+Number(m.unknownTitles||0),0);
+assert.equal(total,287);
+assert.equal('log' in data,false);
+assert.deepEqual(core.validate(data),[]);
+assert.equal(core.publicCopy({...data,log:[{secret:'privado'}]}).log,undefined);
+const bad=structuredClone(data);bad.data.push({...data.data[0]});
+assert(core.validate(bad).some(x=>x.includes('duplicado')));
+const session=await import(new URL('functions/api/admin/session.js',dir));
+const reply=await session.onRequestGet({request:new Request('https://example.org/api/admin/session'),env:{FIREBASE_PROJECT_ID:'demo',BDF_ADMIN_UID:'uid',BDF_KV:{}}});
+assert.equal(reply.status,401);
+console.log('PASSOU: 29 MCs, 287 títulos, API sem token bloqueada.');

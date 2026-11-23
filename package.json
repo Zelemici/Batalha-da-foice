@@ -1,0 +1,8 @@
+{
+  "name": "batalha-da-foice-v9",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  }
+}
