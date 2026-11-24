@@ -168,7 +168,7 @@ form=function(id){
 // Preserve os painéis completos da V9 (inclusive aparência, importação/exportação,
 // música, calendários, níveis e layout). Os recursos novos são abas adicionais.
 const legacyTabs=[['vis','Visão geral'],['mcs','MCs e títulos'],['niv','Níveis'],['ap','Aparência e fontes'],['lay','Layout do ranking'],['mus','Música'],['cal','Calendário'],['mem','Galeria'],['site','Configurações do site'],['log','Histórico'],['dad','Dados, importar/exportar'],['campeoes','Campeões 2026'],['chaves','Chaveamentos']];
-const moreTabs=[['v10-cadastro','Todos os MCs'],['v10-sem-titulos','MCs sem títulos'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-duelos','Confrontos diretos'],['v10-anual','Ranking anual']];
+const moreTabs=[['v10-cadastro','Todos os MCs'],['v10-com-titulos','MCs com títulos'],['v10-sem-titulos','MCs sem títulos'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-duelos','Confrontos diretos'],['v10-anual','Ranking anual']];
 
 function tabs(){
  const p=el('#adm .atabs');if(!p)return;
@@ -194,14 +194,14 @@ function videoList(id){
 admRender=function(){
  if(!canAdmin)return;
  const y=year(),s=season(y);
- if(['mcs','v10-cadastro','v10-sem-titulos'].includes(admTab)){
-  const kind=admTab,onlyUnranked=kind==='v10-sem-titulos',onlyRanked=kind==='mcs';
+ if(['mcs','v10-cadastro','v10-com-titulos','v10-sem-titulos'].includes(admTab)){
+  const kind=admTab,onlyUnranked=kind==='v10-sem-titulos',onlyRanked=kind==='v10-com-titulos';
   const members=data.filter(m=>onlyUnranked?total(m)===0:onlyRanked?total(m)>0:true)
     .slice().sort((a,b)=>onlyUnranked?a.name.localeCompare(b.name,'pt-BR'):
       total(b)-total(a)||a.name.localeCompare(b.name,'pt-BR'));
-  const tags='<div class="v10-roster-tabs"><button class="btn '+(kind==='mcs'?'on':'')+'" data-at="mcs">Com títulos ('+data.filter(m=>total(m)>0).length+')</button>'+
+  const tags='<div class="v10-roster-tabs"><button class="btn '+(onlyRanked?'on':'')+'" data-at="v10-com-titulos">Com títulos ('+data.filter(m=>total(m)>0).length+')</button>'+
     '<button class="btn '+(kind==='v10-sem-titulos'?'on':'')+'" data-at="v10-sem-titulos">Sem títulos ('+data.filter(m=>total(m)===0).length+')</button>'+
-    '<button class="btn '+(kind==='v10-cadastro'?'on':'')+'" data-at="v10-cadastro">Todos ('+data.length+')</button></div>';
+    '<button class="btn '+(kind==='v10-cadastro'||kind==='mcs'?'on':'')+'" data-at="v10-cadastro">Todos ('+data.length+')</button></div>';
   const rows=members.map(m=>{
     const t=total(m),src=m._tmp||m.photo||'';
     return '<article class="v10-admin-mc-card" data-v10-roster-mc="'+h(m.id)+'">'+
@@ -212,7 +212,7 @@ admRender=function(){
         '<button class="btn" data-qm="'+h(m.id)+'" aria-label="Retirar um título de '+h(m.name)+'" '+(!t?'disabled':'')+'>−1</button>'+
       '</div></article>';
   }).join('');
-  const bulk=kind==='mcs'?'<details class="v10-roster-bulk"><summary>Cadastro em lote</summary><p class="hint">Uma linha por MC: Nome; Cidade; 2023:3, 2024:2</p><textarea id="bulk" class="w" rows="5"></textarea><div class="act"><button class="btn on" data-bulk>Adicionar MCs</button></div></details>':'';
+  const bulk=(kind==='mcs'||kind==='v10-cadastro')?'<details class="v10-roster-bulk"><summary>Cadastro em lote</summary><p class="hint">Uma linha por MC: Nome; Cidade; 2023:3, 2024:2</p><textarea id="bulk" class="w" rows="5"></textarea><div class="act"><button class="btn on" data-bulk>Adicionar MCs</button></div></details>':'';
   sheet(onlyUnranked?'MCs cadastrados sem títulos':onlyRanked?'MCs com títulos':'Cadastro geral de MCs',
     '<p class="hint">Gerencie cada MC pelo card. Participantes sem títulos continuam cadastrados e podem entrar em chaveamentos e confrontos; só aparecem no ranking histórico após conquistar o primeiro título.</p>'+
     '<div class="v10-roster-tools"><button class="btn on" id="addBtn">+ Cadastrar MC</button><label>Ano da alteração rápida <input id="qy" type="number" min="2000" max="2100" value="'+(window._qy||new Date().getFullYear())+'"></label></div>'+
