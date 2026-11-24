@@ -11,6 +11,8 @@ const season=y=>{const key=String(y),s=v10().seasons[key]||(v10().seasons[key]={
 const options=(id)=>data.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(m=>'<option value="'+h(m.id)+'" '+(m.id===id?'selected':'')+'>'+h(m.name)+'</option>').join('');
 const avatars=m=>m?.photo?'<img src="'+h(m.photo)+'" alt="Foto de '+h(m.name)+'" loading="lazy">':'<span class="v10-avatar">'+h(m?.name?.slice(0,1)||'?')+'</span>';
 const published=()=>BRACKETS.filter(b=>b.status==='published').slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+const manualDuels=()=>Array.isArray(v10().manualDuels)?v10().manualDuels:(v10().manualDuels=[]);
+const career=m=>core.mcCareer(m,data,BRACKETS,manualDuels());
 const staging=fn=>{fn();save();render();};
 function standings(){return core.annualTable({year:year(),mcList:data,brackets:BRACKETS,season:season(year())});}
 function latest(){
@@ -23,8 +25,9 @@ function hall(){
 function matchup(){
  const a=mc(v10().compareA)||data[0],b=mc(v10().compareB)||data.find(m=>m.id!==a?.id);
  if(!a||!b)return '<p>Cadastre ao menos dois MCs.</p>';
- const history=core.duelHistory(a,b,BRACKETS);
- return '<section class="v10-section"><div class="v10-eyebrow">Histórico de resultados</div><h2>Confronto Direto</h2><div class="v10-compare"><div class="v10-fighter">'+avatars(a)+'<select data-v10-compare="A" aria-label="Primeiro MC">'+options(a.id)+'</select><strong>'+history.a+' vitórias</strong></div><div class="v10-vs"><span>VS</span><b>'+history.a+' × '+history.b+'</b><small>'+history.matches.length+' duelo(s)</small></div><div class="v10-fighter">'+avatars(b)+'<select data-v10-compare="B" aria-label="Segundo MC">'+options(b.id)+'</select><strong>'+history.b+' vitórias</strong></div></div><details class="v10-details"><summary>Histórico de duelos</summary>'+(history.matches.length?history.matches.map(x=>'<p>'+h(x.date||'')+' · '+h(x.edition)+' · '+h(x.winner)+' venceu · '+h(x.score)+'</p>').join(''):'<p>Não há duelos publicados entre esses MCs. Os resultados não são presumidos.</p>')+'</details><small class="hint">Double Three não é contado como duelo individual entre dois MCs.</small></section>';
+ const history=core.duelHistory(a,b,BRACKETS,manualDuels(),data);
+ const careerA=career(a),careerB=career(b);
+ return '<section class="v10-section"><div class="v10-eyebrow">Histórico de resultados</div><h2>Confronto Direto</h2><div class="v10-compare"><div class="v10-fighter">'+avatars(a)+'<select data-v10-compare="A" aria-label="Primeiro MC">'+options(a.id)+'</select><strong>'+history.a+' vitórias · '+history.aRate+'% nos duelos</strong><small>'+careerA.winRate+'% geral</small></div><div class="v10-vs"><span>VS</span><b>'+history.a+' × '+history.b+'</b><small>'+history.matches.length+' duelo(s)</small></div><div class="v10-fighter">'+avatars(b)+'<select data-v10-compare="B" aria-label="Segundo MC">'+options(b.id)+'</select><strong>'+history.b+' vitórias · '+history.bRate+'% nos duelos</strong><small>'+careerB.winRate+'% geral</small></div></div><details class="v10-details"><summary>Histórico de duelos</summary>'+(history.matches.length?history.matches.map(x=>'<p>'+h(x.date||'')+' · '+h(x.edition)+' · '+h(x.winner)+' venceu · '+h(x.score)+'</p>').join(''):'<p>Não há duelos publicados entre esses MCs. Os resultados não são presumidos.</p>')+'</details><small class="hint">Inclui confrontos publicados e resultados antigos cadastrados manualmente. Double Three conta nas estatísticas gerais, mas não como duelo individual. Win rate calculado apenas sobre partidas registradas.</small></section>';
 }
 function annual(){
  const table=standings(),years=[...new Set([year(),...Object.keys(v10().seasons).map(Number)])].sort((a,b)=>b-a);
@@ -43,6 +46,12 @@ function decorate(){
  top.innerHTML=latest()+hall();
  let bottom=el('#v10-bottom');if(!bottom){bottom=document.createElement('div');bottom.id='v10-bottom';home.append(bottom);}
  bottom.innerHTML=matchup()+'<div class="v10-annual-link"><a href="#/anual" class="btn on">Abrir Ranking Anual · TOP 16</a></div>'+highlights();
+ const cal=el('#pgCal');
+ if(cal){
+  const editions=published().filter(b=>b.date);
+  const list=editions.map(b=>'<div class="v10-cal-edition"><strong>'+h(b.date)+' · '+h(b.title)+'</strong><a href="#/edicoes">Ver chaveamento e resultados</a></div>').join('');
+  cal.insertAdjacentHTML('beforeend','<section class="v10-calendar-results"><h3>Edições com resultados registrados</h3>'+(list||'<p class="hint">Os chaveamentos publicados aparecerão aqui.</p>')+'</section>');
+ }
  const page=el('#pgAnnual');if(page){page.hidden=window._pg!=='anual';if(!page.hidden)page.innerHTML=annual();}
  const nav=el('#v10-nav');if(nav)nav.classList.toggle('on',window._pg==='anual');
 }
@@ -50,7 +59,28 @@ const originalRanked=ranked;
 ranked=function(){return originalRanked().filter(m=>total(m)>0);};
 v6BracketRounds=core.bracketRounds;
 const originalRender=render;
-render=function(){originalRender();decorate();};
+function updateTreeWires(){
+ for(const tree of els('.v10-tree')){
+  const svg=tree.querySelector('.v10-tree-wires');if(!svg)continue;
+  const rect=tree.getBoundingClientRect();if(!rect.width||!rect.height)continue;
+  const lines=[],rounds=[...tree.querySelectorAll('.v10-tree-round')];
+  const cx=node=>{const r=node.getBoundingClientRect();return r.left-rect.left+r.width/2;};
+  const ty=node=>node.getBoundingClientRect().top-rect.top;
+  const by=node=>node.getBoundingClientRect().bottom-rect.top;
+  for(let i=0;i<rounds.length-1;i++){
+   const kids=[...rounds[i].querySelectorAll('.v10-br-match')],parents=[...rounds[i+1].querySelectorAll('.v10-br-match')];
+   parents.forEach((parent,j)=>{const py=by(parent),px=cx(parent);
+    for(const child of kids.slice(j*2,j*2+2)){const x=cx(child),y=ty(child),bend=py+(y-py)/2;
+     lines.push('<path d="M '+x+' '+y+' V '+bend+' H '+px+' V '+py+'"/>');}
+   });
+  }
+  svg.setAttribute('viewBox','0 0 '+Math.ceil(rect.width)+' '+Math.ceil(rect.height));svg.innerHTML=lines.join('');
+ }
+}
+const treeRefresh=()=>requestAnimationFrame(()=>requestAnimationFrame(updateTreeWires));
+window.addEventListener('resize',treeRefresh);
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(treeRefresh).observe(document.documentElement);
+render=function(){originalRender();decorate();treeRefresh();};
 const oldMatch=bdfMatchHtml;
 bdfMatchHtml=function(match){
  if(!match.third)return oldMatch(match);
@@ -80,8 +110,15 @@ v6BracketHtml=function(b){
    }).join('')+'</div>';
   };
   board='<div class="v10-br-mirror-board">'+side(false)+'<div class="v10-br-center"><h4>Final</h4>'+center.map(v10MatchHtml).join('')+'</div>'+side(true)+'</div>';
+ }else if(layout==='tree'){
+  const leaves=rounds[0]?.length||1;
+  board='<div class="v10-tree" style="--v10-leaves:'+leaves+'">'+
+   '<svg class="v10-tree-wires" aria-hidden="true" preserveAspectRatio="none"></svg>'+
+   rounds.map((ms,i)=>'<div class="v10-tree-round" data-tree-round="'+i+'"><h4>'+h(labels[i])+'</h4><div class="v10-tree-games">'+
+   ms.map(m=>'<div class="v10-tree-match" style="grid-column:span '+Math.pow(2,i)+'">'+v10MatchHtml(m)+'</div>').join('')+
+   '</div></div>').join('')+'</div>';
  }else{
-  board='<div class="v10-br-rounds '+(layout==='tree'?'v10-br-tree':'v10-br-columns')+'">'+rounds.map((ms,i)=>'<div class="v10-br-round"><h4>'+h(labels[i])+'</h4><div class="v10-br-games">'+ms.map(v10MatchHtml).join('')+'</div></div>').join('')+'</div>';
+  board='<div class="v10-br-rounds v10-br-columns">'+rounds.map((ms,i)=>'<div class="v10-br-round"><h4>'+h(labels[i])+'</h4><div class="v10-br-games">'+ms.map(v10MatchHtml).join('')+'</div></div>').join('')+'</div>';
  }
  return '<article class="v6-bracket v10-bracket v10-layout-'+layout+'"><div class="v6-bracket-header"><div><h3>'+h(b.title)+'</h3><p class="hint">'+h(b.date||'Data pendente')+' · '+b.players.length+' vagas · '+h(names[layout])+' · '+(b.status==='published'?'Publicado':'Rascunho')+'</p></div>'+(canAdmin?'<button class="btn" data-v6-editbr="'+h(b.id)+'">Editar chave</button>':'')+'</div><div class="v10-br-scroll" tabindex="0" aria-label="Chaveamento '+h(b.title)+'">'+board+'</div>'+(win?'<p class="v6-champion">🏆 Campeão: '+h(win)+'</p>':'')+'</article>';
 };
@@ -91,6 +128,8 @@ profile=function(id){
  const m=mc(id),sheet=el('#modal .sheet');if(!m||!sheet)return;
  const photos=GAL.filter(g=>(g.status||'published')==='published'&&(g.mcIds||[]).includes(id)).flatMap(g=>mediaList(g).filter(f=>imageMedia(f.url)).map(f=>f.url)).slice(0,12);
  const vids=(m.videos||[]).filter(core.validVideo);
+ const st=career(m);
+ sheet.insertAdjacentHTML('beforeend','<div class="v10-career"><h3>Estatísticas de batalhas registradas</h3><div class="v10-stat-grid"><div><strong>'+st.games+'</strong><small>Disputadas</small></div><div><strong>'+st.wins+'</strong><small>Vitórias</small></div><div><strong>'+st.winRate+'%</strong><small>Win rate</small></div><div><strong>'+st.twoZero+'</strong><small>Vitórias por 2 × 0</small></div></div><p class="hint">Só entram partidas com resultados registrados. Títulos antigos, sozinhos, não permitem calcular win rate.</p></div>');
  sheet.insertAdjacentHTML('beforeend','<div class="v10-profile"><h3>Perfil do MC</h3><div class="v10-tags">'+(m.tags||[]).map(tag=>'<span class="v10-tag">'+h(tag)+'</span>').join('')+'</div>'+(photos.length?'<h3>Galeria de fotos</h3><div class="v10-photos">'+photos.map(url=>'<img loading="lazy" src="'+h(url)+'" alt="Foto de '+h(m.name)+'">').join('')+'</div>':'')+(vids.length?'<h3>Vídeos de rimas</h3><div class="v10-videos">'+vids.map(v=>{const youtube=core.youtubeId(v.url);return '<div class="v10-video">'+(youtube?'<button class="v10-play" data-v10-play="'+youtube+'" aria-label="Reproduzir"><img loading="lazy" src="https://img.youtube.com/vi/'+youtube+'/hqdefault.jpg" alt=""><span>▶</span></button>':'<video src="'+h(v.url)+'" controls playsinline preload="none"></video>')+'<b>'+h(v.title)+'</b></div>';}).join('')+'</div>':'')+'</div>');
 };
 const originalAdm=admRender;
