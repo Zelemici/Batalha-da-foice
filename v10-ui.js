@@ -97,6 +97,8 @@ const originalAdm=admRender;
 const baseForm10=form;
 form=function(id){
  baseForm10(id);
+ // Um MC novo começa sem títulos. Não colocá-lo automaticamente no ranking histórico.
+ if(!id){const titleRows=el('#fR');const inputs=titleRows?.querySelectorAll('input');if(inputs?.length>1)inputs[1].value='0';}
  const panel=el('#modal .sheet');if(!panel)return;
  panel.classList.add('v10-form-modal');
  panel.insertAdjacentHTML('afterbegin','<div class="v10-toolbar"><button class="btn" data-v10-jump="fN">Informações</button><button class="btn" data-v10-jump="fRp">Estado</button><button class="btn" data-v10-jump="fP">Foto</button><button class="btn" data-v10-jump="fR">Títulos</button>'+(id?'<button class="btn" data-v10-open-panel="v10-tags" data-v10-mcid="'+h(id)+'">Tags</button><button class="btn" data-v10-open-panel="v10-videos" data-v10-mcid="'+h(id)+'">Vídeos</button>':'')+'</div>');
