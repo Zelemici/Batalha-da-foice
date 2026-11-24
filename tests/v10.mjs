@@ -75,4 +75,26 @@ const invalidDuel=structuredClone(manual);
 invalidDuel[0].winnerId=E.id;
 assert(core.validateV10({data:mcs,cfg:{v10:{manualDuels:invalidDuel,seasons:{}}}}).some(x=>/confronto manual/.test(x)));
 assert.deepEqual(core.annualTable({year:2026,mcList:mcs,brackets:[],season:{},manualDuels:manual}),[],'Resultados antigos não criam ranking anual');
+
+// Cadastro automático de MCs digitados nas vagas do chaveamento.
+const known=[{id:'m0',name:'MC Antigo',city:'RJ',photo:'foto.jpg',titles:{2024:2},unknownTitles:0}];
+const initialBracket={id:'auto-1',title:'Batalha teste',players:[' MC Antigo ','Nova MC',' MC NOVO ',''],triples:{'0-1':'Nova MC 3'},results:{}};
+let idCounter=0;
+const prepared=core.prepareBracketRegistrations(initialBracket,known,()=>('new-'+(++idCounter)));
+assert.equal(prepared.created.length,3);
+assert.deepEqual(prepared.created.map(m=>m.name),['Nova MC','MC NOVO','Nova MC 3']);
+assert.equal(prepared.bracket.players[0],'MC Antigo');
+assert.equal(prepared.created[0].unknownTitles,0);
+assert.deepEqual(prepared.created[0].titles,{});
+assert.equal(prepared.created[0].photo,'');
+assert.equal(known.length,1,'Preparar cadastro não pode alterar MCs já cadastrados');
+assert.equal(initialBracket.players[0],' MC Antigo ','Não modificar a chave original');
+assert.throws(()=>core.prepareBracketRegistrations({...initialBracket,players:['MC Antigo','mc antigo','','']},known),/duas vagas/);
+assert.throws(()=>core.prepareBracketRegistrations({...initialBracket,players:['Nova MC','Nova MC','','']},known),/duas vagas/);
+assert.throws(()=>core.prepareBracketRegistrations({...initialBracket,players:['MC Antigo','MC Novo','',''],triples:{'0-0':'mc novo'}},known),/duas vagas/);
+assert.equal(core.prepareBracketRegistrations({players:['mc antigo','','','']},known).created.length,0,'Não duplicar por caixa do texto');
+assert.throws(()=>core.prepareBracketRegistrations({players:['<script>','','','']},known),/Nome de MC inválido/);
+assert.throws(()=>core.prepareBracketRegistrations({players:['A'.repeat(101),'','','']},known),/Nome de MC inválido/);
+assert.equal(core.canonicalMCName('  MC   Antigo  ',known),'MC Antigo');
+
 console.log('PASSOU: V10 — Double Three, ranking anual, bônus, duelos manuais e win rate.');

@@ -56,6 +56,47 @@
     b.results[key]=raw;
     return b;
   }
+
+  // Permite incluir novos MCs pela própria chave, sem atribuir títulos.
+  // Prepara o cadastro sem modificar a lista real até o administrador salvar.
+  function mcNameKey(value){
+    return String(value||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('pt-BR');
+  }
+  function canonicalMCName(value,mcList=[]){
+    const text=String(value||'').replace(/\s+/g,' ').trim();
+    return mcList.find(m=>mcNameKey(m.name)===mcNameKey(text))?.name||text;
+  }
+  function prepareBracketRegistrations(bracket,mcList=[],idFactory){
+    if(!Array.isArray(bracket?.players)||!Array.isArray(mcList))throw Error('Chave ou cadastro inválido');
+    const draft=structuredClone(bracket),names=new Map(mcList.map(m=>[mcNameKey(m.name),m.name]));
+    const created=[];
+    const nextName=value=>{
+      const text=String(value||'').replace(/\s+/g,' ').trim();
+      if(!text)return '';
+      if(text.length>100||/[\x00-\x1f<>]/.test(text))throw Error('Nome de MC inválido: use até 100 caracteres, sem símbolos de código.');
+      const key=mcNameKey(text);
+      if(names.has(key))return names.get(key);
+      const id=idFactory?idFactory():('m'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10));
+      if(!id||mcList.some(m=>m.id===id)||created.some(m=>m.id===id))throw Error('ID de MC duplicado');
+      const mc={id,name:text,city:'',photo:'',titles:{},unknownTitles:0};
+      created.push(mc);names.set(key,text);
+      return text;
+    };
+    draft.players=draft.players.map(nextName);
+    draft.triples=Object.fromEntries(Object.entries(draft.triples||{})
+      .map(([key,value])=>[key,nextName(value)]).filter(([,value])=>value));
+    const participants=[...draft.players.filter(Boolean),
+      ...Object.entries(draft.triples).filter(([k])=>k.startsWith('0-')).map(([,v])=>v)];
+    if(new Set(participants.map(mcNameKey)).size!==participants.length)
+      throw Error('Um MC não pode ocupar duas vagas na primeira fase.');
+    draft.results=Object.fromEntries(Object.entries(draft.results||{}).map(([key,result])=>{
+      if(!result||!result.winner)return [key,result];
+      const winner=names.get(mcNameKey(result.winner))||result.winner;
+      return [key,{...result,winner}];
+    }));
+    if(mcList.length+created.length>5000)throw Error('Limite de MCs cadastrados atingido');
+    return {bracket:draft,created};
+  }
   function annualTable({year,mcList=[],brackets=[],season={}}){
     // A temporada começa vazia. Participantes entram somente quando um
     // chaveamento é publicado com a opção "Contar no Ranking Anual" marcada.
@@ -225,5 +266,5 @@
     }else issues.push('Configuração anual inválida');
     return [...new Set(issues)];
   }
-  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,annualTable,duelHistory,mcCareer,completedBattles,isTwoZero,youtubeId,validVideo,validateV10};
+  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,mcNameKey,canonicalMCName,prepareBracketRegistrations,annualTable,duelHistory,mcCareer,completedBattles,isTwoZero,youtubeId,validVideo,validateV10};
 })(globalThis);
