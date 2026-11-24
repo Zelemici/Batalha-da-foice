@@ -21,6 +21,41 @@
     }
     return rounds;
   }
+
+  // Ao alterar um participante ou vencedor, apenas o ramo afetado perde os
+  // placares anteriores. Resultados de outros confrontos são preservados.
+  function invalidateBracketPath(b,key){
+    const match=/^(\d+)-(\d+)$/.exec(String(key));
+    if(!match)throw Error('Identificador de confronto inválido');
+    if(!b.results||typeof b.results!=='object')b.results={};
+    const size=Array.isArray(b.players)?b.players.length:0;
+    const rounds=Math.log2(size);
+    let r=Number(match[1]),i=Number(match[2]);
+    if(!Number.isInteger(rounds)||r>=rounds||i>=size/(2**(r+1)))throw Error('Confronto fora da chave');
+    for(;r<rounds;r++,i=Math.floor(i/2))delete b.results[r+'-'+i];
+    return b;
+  }
+  function setBracketResult(b,key,result){
+    const match=bracketRounds(b).flat().find(x=>x.key===key);
+    if(!match||!match.a||!match.c)throw Error('Selecione os MCs deste confronto primeiro');
+    if(!result?.winner){invalidateBracketPath(b,key);return b;}
+    if(!match.participants.includes(result.winner))throw Error('Vencedor precisa participar do confronto');
+    const raw={winner:result.winner,score:String(result.score||'')};
+    if(match.third){
+      const pts=result.points;
+      if(!Array.isArray(pts)||pts.length!==3||pts.some(n=>!Number.isInteger(n)||n<0||n>99))
+        throw Error('Informe os três placares do Double Three');
+      const highest=Math.max(...pts);
+      if(pts[match.participants.indexOf(result.winner)]!==highest)
+        throw Error('O vencedor precisa ter a maior pontuação');
+      raw.points=[...pts];raw.score=pts.join(' × ');
+    }else if(!['2×0','2×1','W.O.'].includes(raw.score))
+      throw Error('Selecione o placar do confronto');
+    if(b.results?.[key]?.winner!==raw.winner)invalidateBracketPath(b,key);
+    if(!b.results)b.results={};
+    b.results[key]=raw;
+    return b;
+  }
   function annualTable({year,mcList=[],brackets=[],season={}}){
     // A temporada começa vazia. Participantes entram somente quando um
     // chaveamento é publicado com a opção "Contar no Ranking Anual" marcada.
@@ -190,5 +225,5 @@
     }else issues.push('Configuração anual inválida');
     return [...new Set(issues)];
   }
-  root.BDFV10Core={defaults,rules,bracketRounds,annualTable,duelHistory,mcCareer,completedBattles,isTwoZero,youtubeId,validVideo,validateV10};
+  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,annualTable,duelHistory,mcCareer,completedBattles,isTwoZero,youtubeId,validVideo,validateV10};
 })(globalThis);

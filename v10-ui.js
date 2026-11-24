@@ -255,56 +255,70 @@ admRender=function(){
 };
 function fillTags(){const m=mc(el('#v10TagMC')?.value);if(el('#v10Tags'))el('#v10Tags').value=(m?.tags||[]).join(', ');}
 function fillRep(){const m=mc(el('#v10RepMC')?.value);if(el('#v10RepType'))el('#v10RepType').value=m?.rep||'';if(el('#v10RepLoc'))el('#v10RepLoc').value=m?.repLoc||'';}
-function bracketEdit(id){
+let bracketDraft=null;
+function bracketEdit(id,refresh=false){
  if(!canAdmin)return loginForm();
  let b=BRACKETS.find(x=>x.id===id);
  if(!b){b={id:'br-'+Date.now(),title:'Nova edição',date:new Date().toISOString().slice(0,10),players:Array(8).fill(''),results:{},triples:{},layout:'mirror',countAnnual:true,status:'draft'};BRACKETS.push(b);}
+ if(!refresh||bracketDraft?.id!==b.id)bracketDraft=structuredClone(b);
+ b=bracketDraft;
  window._v6Editing=b.id;
  const rounds=core.bracketRounds(b),names=data.map(m=>'<option value="'+h(m.name)+'"></option>').join('');
  const matches=rounds.map((ms,r)=>'<h3>'+['Primeira fase','Segunda fase','Semifinal','Final'][r]+'</h3>'+ms.map(m=>{
-  const t=m.third,points=m.result?.points||m.participants.map(()=>0);
-  return '<div class="v10-match-edit"><b>Confronto '+(m.i+1)+' · '+h(m.key)+'</b><p>'+h(m.a||'A definir')+' × '+h(m.c||'A definir')+(t?' × '+h(t):'')+'</p><div class="v10-third"><button type="button" class="btn" data-v10-show-third="'+h(m.key)+'" '+(t?'hidden':'')+'>+ Adicionar terceiro MC</button><label data-v10-third-wrap="'+h(m.key)+'" '+(t?'':'hidden')+'>Terceiro MC (limpe para remover)<input data-v10-third="'+h(m.key)+'" list="v10-names" placeholder="Nome do terceiro MC" value="'+h(t)+'"></label></div>'+m.participants.map((n,i)=>'<label class="v10-score-row">'+h(n)+'<input type="number" min="0" max="99" data-v10-pts="'+h(m.key)+'" data-v10-pos="'+i+'" value="'+(points[i]??0)+'" '+(t?'':'disabled')+'></label>').join('')+(t?'':'<label>Placar do duelo <select data-v10-outcome="'+h(m.key)+'"><option value="">Pendente</option>'+['2×0','2×1','W.O.'].map(x=>'<option value="'+x+'" '+(m.result?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>')+'<label>Vencedor <select data-v10-win="'+h(m.key)+'"><option value="">Ainda não definido</option>'+m.participants.map(n=>'<option value="'+h(n)+'" '+(m.result?.winner===n?'selected':'')+'>'+h(n)+'</option>').join('')+'</select></label></div>';
+  const pick=(n,i)=>'<label>MC '+(i%2+1)+'<select data-v10-br-player="'+i+'"><option value="">Selecionar MC</option>'+data.map(x=>'<option value="'+h(x.name)+'" '+(x.name===n?'selected':'')+'>'+h(x.name)+'</option>').join('')+'</select></label>'; const t=m.third,points=m.result?.points||m.participants.map(()=>0);
+  return '<div class="v10-match-edit"><b>Confronto '+(m.i+1)+' · '+h(m.key)+'</b>'+(r===0?pick(m.a,m.i*2)+pick(m.c,m.i*2+1):'')+'<p>'+h(m.a||'A definir')+' × '+h(m.c||'A definir')+(t?' × '+h(t):'')+'</p><div class="v10-third"><button type="button" class="btn" data-v10-show-third="'+h(m.key)+'" '+(t?'hidden':'')+'>+ Adicionar terceiro MC</button><label data-v10-third-wrap="'+h(m.key)+'" '+(t?'':'hidden')+'>Terceiro MC (limpe para remover)<input data-v10-third="'+h(m.key)+'" list="v10-names" placeholder="Nome do terceiro MC" value="'+h(t||'')+'"></label></div>'+m.participants.map((n,i)=>'<label class="v10-score-row">'+h(n)+'<input type="number" min="0" max="99" data-v10-pts="'+h(m.key)+'" data-v10-pos="'+i+'" value="'+(points[i]??0)+'" '+(t?'':'disabled')+'></label>').join('')+(t?'':'<label>Placar do duelo <select data-v10-outcome="'+h(m.key)+'"><option value="">Pendente</option>'+['2×0','2×1','W.O.'].map(x=>'<option value="'+x+'" '+(m.result?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>')+'<label>Vencedor <select data-v10-win="'+h(m.key)+'"><option value="">Ainda não definido</option>'+m.participants.map(n=>'<option value="'+h(n)+'" '+(m.result?.winner===n?'selected':'')+'>'+h(n)+'</option>').join('')+'</select></label></div>';
  }).join('')).join('');
- open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha até três MCs por confronto. Só um avança. Em caso de empate, selecione manualmente o vencedor. Primeiro salve os nomes para liberar os confrontos seguintes.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Participantes</h3><div class="v10-admin-grid">'+b.players.map((n,i)=>'<label>Vaga '+(i+1)+'<input list="v10-names" data-v10-br-player="'+i+'" value="'+h(n)+'"></label>').join('')+'</div><h3>Prévia da chave no modelo selecionado</h3>'+v6BracketHtml(b)+'<p class="hint">Escolha o modelo acima e salve para atualizar a prévia. O público verá somente o modelo escolhido nesta edição.</p><h3>Resultados · placares abaixo de cada confronto</h3>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
+ open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha até três MCs por confronto. Só um avança. Em caso de empate, selecione manualmente o vencedor. Escolha os MCs e os vencedores diretamente nos confrontos. As próximas fases são atualizadas automaticamente.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Prévia da chave no modelo selecionado</h3>'+v6BracketHtml(b)+'<p class="hint">A prévia acompanha as alterações dos confrontos. O público verá somente o modelo escolhido nesta edição.</p><h3>Resultados · placares abaixo de cada confronto</h3>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
 }
-function saveBracket(id){
- const b=BRACKETS.find(x=>x.id===id);if(!b)return;
- const nextSize=Number(el('#v10BrSize')?.value),p=els('[data-v10-br-player]').map(x=>x.value.trim()),change=nextSize!==b.players.length||p.some((n,i)=>n!==b.players[i]);
- if(!el('#v10BrTitle')?.value.trim())return toast('Informe o nome da edição.',1);
- if(p.some(x=>x&&!data.some(m=>m.name===x)))return toast('Cadastre primeiro os MCs para participar.',1);
- if(new Set(p.filter(Boolean)).size!==p.filter(Boolean).length)return toast('MC repetido nas vagas.',1);
- b.title=el('#v10BrTitle').value.trim();b.date=el('#v10BrDate').value;b.editionNumber=String(el('#v10BrNum').value||'').replace(/\D/g,'').slice(0,6);b.status=el('#v10BrStatus').value;b.layout=el('#v10BrLayout')?.value||'columns';b.countAnnual=!!el('#v10BrAnnual')?.checked;b.awardsTitle=!el('#v10BrNoTitle').checked;
- if(change){
-  b.players=Array(nextSize).fill('');if(nextSize===p.length)b.players=p;
-  b.results={};b.triples={};
-  if(nextSize!==p.length){toast('Tamanho atualizado. Preencha as novas vagas.',1);}
- }else{
-  const triples={};for(const input of els('[data-v10-third]')){if(input.value.trim())triples[input.dataset.v10Third]=input.value.trim();}
-  const first=[...b.players.filter(Boolean),...Object.entries(triples).filter(([key])=>key.startsWith('0-')).map(([,n])=>n)];
-  if(new Set(first).size!==first.length||Object.values(triples).some(n=>!data.some(m=>m.name===n)))return toast('Terceiro MC inválido ou repetido na primeira fase.',1);
-  const old=JSON.stringify(b.triples||{});b.triples=triples;
-  if(old!==JSON.stringify(triples))b.results={};
-  else{
-   const results={};
-   for(const match of core.bracketRounds(b).flat()){
-    const winner=el('[data-v10-win="'+match.key+'"]')?.value||'';
-    if(!winner||!match.participants.includes(winner)||!match.a||!match.c)continue;
-    if(match.third){
-     const pts=els('[data-v10-pts="'+match.key+'"]').map(x=>Number(x.value));
-     if(pts.length!==3||pts.some(x=>!Number.isInteger(x)||x<0||x>99))return toast('Informe três placares válidos.',1);
-     const max=Math.max(...pts),top=pts.map((x,i)=>x===max?i:-1).filter(x=>x>=0);
-     const selected=top.length===1?match.participants[top[0]]:winner;
-     results[match.key]={winner:selected,points:pts,score:pts.join(' × ')};
-    }else{
-     const score=el('[data-v10-outcome="'+match.key+'"]')?.value||'';
-     if(score)results[match.key]={winner,score};
-    }
-   }
-   b.results=results;
-  }
+
+function readBracketMeta(b){
+ b.title=el('#v10BrTitle').value.trim();b.date=el('#v10BrDate').value;
+ b.editionNumber=String(el('#v10BrNum').value||'').replace(/\D/g,'').slice(0,6);
+ b.status=el('#v10BrStatus').value;b.layout=el('#v10BrLayout').value;
+ b.countAnnual=el('#v10BrAnnual').checked;b.awardsTitle=!el('#v10BrNoTitle').checked;
+ const link=el('#v8TitleLink')?.value||'';
+ b.titleLink=v8AvailableTitleSlots(b).find(x=>v8TitleKey(x)===link);
+}
+document.addEventListener('change',e=>{
+ const x=e.target,b=bracketDraft;if(!canAdmin||!b||!el('#v10BrTitle'))return;
+ const d=x.dataset;
+ if(!x.matches('#v10BrSize,#v10BrLayout,[data-v10-br-player],[data-v10-third],[data-v10-win],[data-v10-outcome],[data-v10-pts]'))return;
+ const previous=structuredClone(b);
+ try{
+ readBracketMeta(b);
+ if(x.id==='v10BrSize'){
+ const size=Number(x.value);if(size!==b.players.length){
+ if(Object.keys(b.results||{}).length&&!confirm('Alterar o tamanho limpa os resultados. Continuar?')){x.value=b.players.length;return;}
+ b.players=Array.from({length:size},(_,i)=>b.players[i]||'');b.results={};b.triples={};}
+ }else if(d.v10BrPlayer!==undefined){
+ const i=Number(d.v10BrPlayer),n=x.value;
+ if(n&&b.players.some((v,j)=>j!==i&&v===n))throw Error('MC já está em outra vaga.');
+ if(n&&Object.entries(b.triples||{}).some(([k,v])=>k.startsWith('0-')&&v===n))throw Error('MC já está em outro confronto.');
+ if(b.players[i]!==n){b.players[i]=n;core.invalidateBracketPath(b,'0-'+Math.floor(i/2));}
+ }else if(d.v10Third!==undefined){
+ const k=d.v10Third,n=x.value.trim(),m=core.bracketRounds(b).flat().find(v=>v.key===k);
+ if(n&&(!data.some(v=>v.name===n)||n===m.a||n===m.c))throw Error('Selecione um terceiro MC diferente e cadastrado.');
+ if(n&&k.startsWith('0-')&&(b.players.includes(n)||Object.entries(b.triples||{}).some(([j,v])=>j!==k&&j.startsWith('0-')&&v===n)))throw Error('MC já está na primeira fase.');
+ b.triples||={};if((b.triples[k]||'')!==n){if(n)b.triples[k]=n;else delete b.triples[k];core.invalidateBracketPath(b,k);}
+ }else if(x.id!=='v10BrLayout'){
+ const k=d.v10Win||d.v10Outcome||d.v10Pts;
+ const m=core.bracketRounds(b).flat().find(v=>v.key===k);
+ const winner=el('[data-v10-win="'+k+'"]').value;
+ const score=el('[data-v10-outcome="'+k+'"]')?.value||'';
+ const points=els('[data-v10-pts="'+k+'"]').map(v=>Number(v.value));
+ if(!winner||(!m.third&&!score)){if(m.result)core.invalidateBracketPath(b,k);return;}
+ core.setBracketResult(b,k,{winner,score,points});
  }
+ const scroll=el('#modal')?.scrollTop||0;bracketEdit(b.id,true);if(el('#modal'))el('#modal').scrollTop=scroll;
+ }catch(err){bracketDraft=previous;toast(err.message,1);bracketEdit(previous.id,true);}
+},true);
+function saveBracket(id){
+ const b=bracketDraft;if(!canAdmin||!b||b.id!==id)return;
+ readBracketMeta(b);
+ if(!b.title)return toast('Informe o nome da edição.',1);
  if(!v8SaveBracketLink(b))return;
- save();render();bracketEdit(id);
+ const i=BRACKETS.findIndex(x=>x.id===id);if(i<0)return;
+ BRACKETS[i]=structuredClone(b);save();render();bracketEdit(id);toast('Chave e placares salvos no rascunho.');
 }
 v6BracketEdit=bracketEdit;
 v6SaveBracket=saveBracket;
