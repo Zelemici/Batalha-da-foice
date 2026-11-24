@@ -29,6 +29,11 @@ assert.equal(points(A.id).points,11,'Campeão: 10 + bônus 2×0 na final, sem b�
 assert.equal(points(C.id).points,8,'Vice: 7 + um 2×0');
 assert.equal(points(E.id).points,6,'Semifinal: 4 + 2 de ajuste');
 assert.equal(points(A.id).bonus,1);
+// Em edição com mais fases, bônus 2×0 só conta na primeira e segunda fases.
+const eight={...bracket,id:'eight',players:['A','B','C','D','E','F','G','H'],triples:{},results:{'0-0':{winner:'A',score:'2×0'},'0-1':{winner:'C',score:'2×0'},'0-2':{winner:'E',score:'2×0'},'0-3':{winner:'G',score:'2×0'},'1-0':{winner:'A',score:'2×0'},'1-1':{winner:'E',score:'2×0'},'2-0':{winner:'A',score:'2×0'}}};
+const members8=['A','B','C','D','E','F','G','H'].map((name,i)=>({name,id:'x'+i,titles:{}}));
+const table8=core.annualTable({year:2026,mcList:members8,brackets:[eight],season:{rules:core.defaults}});
+assert.equal(table8.find(x=>x.id==='x0').bonus,2,'Sem bônus na terceira fase ou final');
 assert.equal(core.duelHistory(A,B,[bracket]).matches.length,0,'Double Three não vira confronto direto');
 assert.equal(core.duelHistory(A,C,[bracket]).a,1);
 assert.equal(core.youtubeId('https://youtu.be/dQw4w9WgXcQ'),'dQw4w9WgXcQ');
