@@ -95,3 +95,7 @@
 .v10-form-modal #fR{background:#ffffff08;border-radius:10px;padding:12px;margin-top:6px}
 .v10-form-modal .act{position:sticky;bottom:0;background:#181414ec;padding:12px 0;border-top:1px solid #ffffff27}
 @media(max-width:670px){.v10-form-modal{max-width:100vw;width:100vw;padding:14px!important}.v10-form-modal .v10-toolbar{position:static}}
+
+/* Login mobile V10: acesso discreto no menu, mantendo autenticação no servidor. */
+#v10-mobile-admin{display:none;background:transparent;border:1px solid #ffffff33;color:#ffad69;border-radius:10px;padding:10px 12px;font:inherit;cursor:pointer}
+@media(max-width:760px){#v10-mobile-admin{display:block;width:100%;text-align:left;margin:6px 0 4px}#nv.open #v10-mobile-admin{display:block}#modal .sheet:has(#v6email){max-width:95vw!important;width:min(420px,95vw)!important;padding:22px!important}#adm .asheet{max-width:100%;overflow-x:hidden}}
