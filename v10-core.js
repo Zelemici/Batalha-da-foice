@@ -71,18 +71,59 @@
     }
     return [...totals.values()].sort((a,b)=>b.points-a.points||b.wins-a.wins||byId.get(a.id).name.localeCompare(byId.get(b.id).name,'pt-BR')).slice(0,16);
   }
-  function duelHistory(a,b,brackets=[]){
-    const out={a:0,b:0,matches:[]};
-    if(!a||!b||a.id===b.id)return out;
-    for(const bracket of brackets.filter(br=>br.status==='published')){
-      for(const match of bracketRounds(bracket).flat()){
-        if(match.third||!match.result?.winner||![match.a,match.c].includes(a.name)||![match.a,match.c].includes(b.name))continue;
-        if(match.result.winner===a.name)out.a++;
-        else if(match.result.winner===b.name)out.b++;
-        else continue;
-        out.matches.push({edition:bracket.title,date:bracket.date,score:match.result.score||'',winner:match.result.winner});
+  // Resultados avulsos usam IDs estáveis de MC, não dependem de chaves históricas.
+  // O ADM deve registrar apenas confrontos que não constem de um chaveamento.
+  function isTwoZero(score){return /^2\\s*[×xX-]\\s*0$/.test(String(score||'').trim());}
+  function completedBattles(brackets=[],manualDuels=[],mcList=[]){
+    const byName=new Map(mcList.map(m=>[m.name,m.id]));
+    const out=[];
+    for(const br of brackets.filter(b=>b.status==='published')){
+      for(const m of bracketRounds(br).flat()){
+        if(!m.result?.winner||m.participants.length<2)continue;
+        const ids=m.participants.map(n=>byName.get(n));
+        const winnerId=byName.get(m.result.winner);
+        if(ids.some(x=>!x)||!winnerId)continue;
+        out.push({id:'br:'+br.id+':'+m.key,ids,winnerId,score:m.result.score||'',
+          edition:br.title||'',date:br.date||'',source:'chaveamento'});
       }
     }
+    for(const d of manualDuels||[]){
+      if(!d||!d.aId||!d.bId||d.aId===d.bId||![d.aId,d.bId].includes(d.winnerId))continue;
+      out.push({id:'manual:'+d.id,ids:[d.aId,d.bId],winnerId:d.winnerId,
+        score:String(d.score||''),edition:String(d.edition||'Confronto antigo'),
+        date:String(d.date||''),source:'manual'});
+    }
+    return out;
+  }
+  function duelHistory(a,b,brackets=[],manualDuels=[],mcList=[]){
+    const out={a:0,b:0,matches:[],aRate:0,bRate:0};
+    if(!a||!b||a.id===b.id)return out;
+    const names=mcList.length?mcList:[a,b];
+    for(const m of completedBattles(brackets,manualDuels,names)){
+      if(m.ids.length!==2||!m.ids.includes(a.id)||!m.ids.includes(b.id))continue;
+      if(m.winnerId===a.id)out.a++;
+      else if(m.winnerId===b.id)out.b++;
+      else continue;
+      out.matches.push({id:m.id,edition:m.edition,date:m.date,score:m.score,
+        winner:m.winnerId===a.id?a.name:b.name,source:m.source});
+    }
+    const count=out.a+out.b;
+    out.aRate=count?Math.round(1000*out.a/count)/10:0;
+    out.bRate=count?Math.round(1000*out.b/count)/10:0;
+    out.matches.sort((x,y)=>String(y.date).localeCompare(String(x.date)));
+    return out;
+  }
+  function mcCareer(m,mcList=[],brackets=[],manualDuels=[]){
+    const out={games:0,wins:0,losses:0,winRate:0,twoZero:0};
+    if(!m)return out;
+    for(const battle of completedBattles(brackets,manualDuels,mcList)){
+      if(!battle.ids.includes(m.id))continue;
+      out.games++;
+      if(battle.winnerId===m.id){out.wins++;
+        if(battle.ids.length===2&&isTwoZero(battle.score))out.twoZero++;
+      }else out.losses++;
+    }
+    out.winRate=out.games?Math.round(1000*out.wins/out.games)/10:0;
     return out;
   }
   function youtubeId(value){
@@ -122,6 +163,21 @@
         if(match.third&&match.result&&(!pts||pts.length!==3))issues.push('Double Three exige três placares');
       }
     }
+    const duels=d?.cfg?.v10?.manualDuels||[];
+    if(!Array.isArray(duels)||duels.length>10000)issues.push('Histórico manual de confrontos inválido');
+    else{
+      const seenDuels=new Set();
+      for(const duel of duels){
+        if(!duel||typeof duel.id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(duel.id)||seenDuels.has(duel.id)||
+           !ids.has(duel.aId)||!ids.has(duel.bId)||duel.aId===duel.bId||
+           ![duel.aId,duel.bId].includes(duel.winnerId)||
+           typeof duel.score!=='string'||!['2×0','2×1','W.O.','Outro'].includes(duel.score)||
+           typeof duel.edition!=='string'||!duel.edition.trim()||duel.edition.length>150||
+           typeof duel.date!=='string'||(duel.date&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(duel.date)))
+           issues.push('Resultado de confronto manual inválido');
+        if(duel?.id)seenDuels.add(duel.id);
+      }
+    }
     const seasons=d?.cfg?.v10?.seasons||{};
     if(seasons&&typeof seasons==='object'&&!Array.isArray(seasons)){
       for(const [year,s] of Object.entries(seasons)){
@@ -134,5 +190,5 @@
     }else issues.push('Configuração anual inválida');
     return [...new Set(issues)];
   }
-  root.BDFV10Core={defaults,rules,bracketRounds,annualTable,duelHistory,youtubeId,validVideo,validateV10};
+  root.BDFV10Core={defaults,rules,bracketRounds,annualTable,duelHistory,mcCareer,completedBattles,isTwoZero,youtubeId,validVideo,validateV10};
 })(globalThis);
