@@ -27,7 +27,8 @@ function matchup(){
  if(!a||!b)return '<p>Cadastre ao menos dois MCs.</p>';
  const history=core.duelHistory(a,b,BRACKETS,manualDuels(),data);
  const careerA=career(a),careerB=career(b);
- return '<section class="v10-section"><div class="v10-eyebrow">Histórico de resultados</div><h2>Confronto Direto</h2><div class="v10-compare"><div class="v10-fighter">'+avatars(a)+'<select data-v10-compare="A" aria-label="Primeiro MC">'+options(a.id)+'</select><strong>'+history.a+' vitórias · '+history.aRate+'% nos duelos</strong><small>'+careerA.winRate+'% geral</small></div><div class="v10-vs"><span>VS</span><b>'+history.a+' × '+history.b+'</b><small>'+history.matches.length+' duelo(s)</small></div><div class="v10-fighter">'+avatars(b)+'<select data-v10-compare="B" aria-label="Segundo MC">'+options(b.id)+'</select><strong>'+history.b+' vitórias · '+history.bRate+'% nos duelos</strong><small>'+careerB.winRate+'% geral</small></div></div><details class="v10-details"><summary>Histórico de duelos</summary>'+(history.matches.length?history.matches.map(x=>'<p>'+h(x.date||'')+' · '+h(x.edition)+' · '+h(x.winner)+' venceu · '+h(x.score)+'</p>').join(''):'<p>Não há duelos publicados entre esses MCs. Os resultados não são presumidos.</p>')+'</details><small class="hint">Inclui confrontos publicados e resultados antigos cadastrados manualmente. Double Three conta nas estatísticas gerais, mas não como duelo individual. Win rate calculado apenas sobre partidas registradas.</small></section>';
+ const duelPct=(count,value)=>count?value+'%':'—';
+ return '<section class="v10-section"><div class="v10-eyebrow">Histórico de resultados</div><h2>Confronto Direto</h2><div class="v10-compare"><div class="v10-fighter">'+avatars(a)+'<select data-v10-compare="A" aria-label="Primeiro MC">'+options(a.id)+'</select><strong>'+history.a+' vitórias · '+duelPct(history.matches.length,history.aRate)+' nos duelos</strong><small>'+duelPct(careerA.games,careerA.winRate)+' geral</small></div><div class="v10-vs"><span>VS</span><b>'+history.a+' × '+history.b+'</b><small>'+history.matches.length+' duelo(s)</small></div><div class="v10-fighter">'+avatars(b)+'<select data-v10-compare="B" aria-label="Segundo MC">'+options(b.id)+'</select><strong>'+history.b+' vitórias · '+duelPct(history.matches.length,history.bRate)+' nos duelos</strong><small>'+duelPct(careerB.games,careerB.winRate)+' geral</small></div></div><details class="v10-details"><summary>Histórico de duelos</summary>'+(history.matches.length?history.matches.map(x=>'<p>'+h(x.date||'')+' · '+h(x.edition)+' · '+h(x.winner)+' venceu · '+h(x.score)+'</p>').join(''):'<p>Não há duelos publicados entre esses MCs. Os resultados não são presumidos.</p>')+'</details><small class="hint">Inclui confrontos publicados e resultados antigos cadastrados manualmente. Double Three conta nas estatísticas gerais, mas não como duelo individual. Win rate calculado apenas sobre partidas registradas.</small></section>';
 }
 function annual(){
  const table=standings(),years=[...new Set([year(),...Object.keys(v10().seasons).map(Number)])].sort((a,b)=>b-a);
@@ -39,8 +40,23 @@ function highlights(){
  const fv=fm&&((fm.videos||[]).find(v=>v.url===v10().featuredVideoUrl&&core.validVideo(v))||(fm.videos||[]).find(core.validVideo));
  return '<section class="v10-section"><div class="v10-eyebrow">Destaques da roda</div><h2>Destaques da semana</h2><div class="v10-highlight"><div><small>Último campeão</small><strong>'+h(w||'Ainda não informado')+'</strong></div><div><small>Batalha mais recente</small><strong>'+h(b?.title||'Aguardando cadastro')+'</strong></div><div><small>Rima em destaque</small><strong>'+h(fv?.title||'Aguardando seleção')+'</strong>'+(fm&&fv?'<button class="btn" data-v10-profile="'+h(fm.id)+'">Ver vídeo</button>':'')+'</div></div></section>';
 }
+function decorateCards(){
+ const containers=[el('#list'),el('#top2')];
+ for(const root of containers){
+  if(!root)continue;
+  for(const card of root.querySelectorAll('[data-id].card, [data-id].sr')){
+   const m=mc(card.dataset.id);if(!m)continue;
+   const st=career(m),point=card.querySelector('.tags, .sr-history-meta');
+   if(!point||point.querySelector('.v10-card-record'))continue;
+   const rate=st.games?st.winRate+'%':'—';
+   point.insertAdjacentHTML('beforeend','<span class="v10-card-record" title="Apenas batalhas com resultados cadastrados">'+
+      st.wins+' vitórias · '+rate+' win rate · '+st.twoZero+' (2 × 0)</span>');
+  }
+ }
+}
 function decorate(){
  if(!data.length)return;
+ decorateCards();
  const home=el('#pgHome');if(!home)return;
  let top=el('#v10-top');if(!top){top=document.createElement('div');top.id='v10-top';home.prepend(top);}
  top.innerHTML=latest()+hall();
@@ -129,7 +145,7 @@ profile=function(id){
  const photos=GAL.filter(g=>(g.status||'published')==='published'&&(g.mcIds||[]).includes(id)).flatMap(g=>mediaList(g).filter(f=>imageMedia(f.url)).map(f=>f.url)).slice(0,12);
  const vids=(m.videos||[]).filter(core.validVideo);
  const st=career(m);
- sheet.insertAdjacentHTML('beforeend','<div class="v10-career"><h3>Estatísticas de batalhas registradas</h3><div class="v10-stat-grid"><div><strong>'+st.games+'</strong><small>Disputadas</small></div><div><strong>'+st.wins+'</strong><small>Vitórias</small></div><div><strong>'+st.winRate+'%</strong><small>Win rate</small></div><div><strong>'+st.twoZero+'</strong><small>Vitórias por 2 × 0</small></div></div><p class="hint">Só entram partidas com resultados registrados. Títulos antigos, sozinhos, não permitem calcular win rate.</p></div>');
+ sheet.insertAdjacentHTML('beforeend','<div class="v10-career"><h3>Estatísticas de batalhas registradas</h3><div class="v10-stat-grid"><div><strong>'+st.games+'</strong><small>Disputadas</small></div><div><strong>'+st.wins+'</strong><small>Vitórias</small></div><div><strong>'+(st.games?st.winRate+'%':'—')+'</strong><small>Win rate</small></div><div><strong>'+st.twoZero+'</strong><small>Vitórias por 2 × 0</small></div></div><p class="hint">Só entram partidas com resultados registrados. Títulos antigos, sozinhos, não permitem calcular win rate.</p></div>');
  sheet.insertAdjacentHTML('beforeend','<div class="v10-profile"><h3>Perfil do MC</h3><div class="v10-tags">'+(m.tags||[]).map(tag=>'<span class="v10-tag">'+h(tag)+'</span>').join('')+'</div>'+(photos.length?'<h3>Galeria de fotos</h3><div class="v10-photos">'+photos.map(url=>'<img loading="lazy" src="'+h(url)+'" alt="Foto de '+h(m.name)+'">').join('')+'</div>':'')+(vids.length?'<h3>Vídeos de rimas</h3><div class="v10-videos">'+vids.map(v=>{const youtube=core.youtubeId(v.url);return '<div class="v10-video">'+(youtube?'<button class="v10-play" data-v10-play="'+youtube+'" aria-label="Reproduzir"><img loading="lazy" src="https://img.youtube.com/vi/'+youtube+'/hqdefault.jpg" alt=""><span>▶</span></button>':'<video src="'+h(v.url)+'" controls playsinline preload="none"></video>')+'<b>'+h(v.title)+'</b></div>';}).join('')+'</div>':'')+'</div>');
 };
 const originalAdm=admRender;
@@ -334,6 +350,13 @@ async function clickAction(e){
   const aId=el('#v10DuelA')?.value,bId=el('#v10DuelB')?.value,winnerId=el('#v10DuelWinner')?.value,
         edition=el('#v10DuelEdition')?.value.trim(),score=el('#v10DuelScore')?.value,date=el('#v10DuelDate')?.value||'';
   if(!aId||!bId||aId===bId||![aId,bId].includes(winnerId)||!edition||edition.length>150)return toast('Informe dois MCs diferentes, vencedor e nome da batalha.',1);
+  // Evitar duas entradas idênticas para o mesmo confronto histórico, inclusive
+  // quando ele já foi registrado em um chaveamento publicado.
+  const norm=x=>String(x||'').trim().toLocaleLowerCase('pt-BR');
+  const samePair=(a,b,x,y)=>(a===x&&b===y)||(a===y&&b===x);
+  const dupe=manualDuels().some(d=>d.id!==window._v10EditDuel&&samePair(aId,bId,d.aId,d.bId)&&norm(d.edition)===norm(edition)&&d.date===date&&d.score===score&&d.winnerId===winnerId);
+  const bracketDupe=core.completedBattles(BRACKETS,[],data).some(d=>d.ids.length===2&&samePair(aId,bId,d.ids[0],d.ids[1])&&norm(d.edition)===norm(edition)&&d.date===date&&d.score===score&&d.winnerId===winnerId);
+  if(dupe||bracketDupe)return toast('Esse confronto já está cadastrado. Edite o registro existente para evitar dupla contagem.',1);
   const original=manualDuels().find(d=>d.id===window._v10EditDuel);
   const record={id:original?.id||'duel-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),aId,bId,winnerId,edition,score,date};
   if(original)Object.assign(original,record);else manualDuels().push(record);
