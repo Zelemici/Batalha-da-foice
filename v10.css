@@ -206,3 +206,40 @@
 .v10-roster-bulk{padding:11px;border:1px solid var(--line);border-radius:10px;margin:10px 0}
 .v10-roster-bulk summary{cursor:pointer;color:var(--acc)}
 @media(max-width:560px){.v10-admin-roster-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.v10-admin-mc-face{aspect-ratio:1}.v10-admin-mc-actions{gap:3px;padding:5px}.v10-admin-mc-actions .btn{font-size:11px;padding:7px 2px}.v10-roster-tools{align-items:flex-start}}
+
+/* Editor visual V10 — janela larga e confortável apenas no ADM.
+   Não altera os modais públicos, o login nem a identidade visual da V9. */
+#modal .sheet.v10-bracket-editor{
+  box-sizing:border-box;
+  width:min(1440px,calc(100vw - 48px));
+  max-width:min(1440px,calc(100vw - 48px))!important;
+  min-height:min(680px,calc(100dvh - 36px));
+  padding:clamp(20px,2.5vw,38px)!important;
+  margin:0 auto;
+  background:var(--panel);
+  border:1px solid var(--line);
+  box-shadow:0 18px 60px #000b;
+  overflow:visible;
+}
+.v10-bracket-editor>.v10-admin-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px 20px;
+  margin-bottom:24px;
+}
+.v10-bracket-editor .v10-editor-round{margin:22px 0}
+.v10-bracket-editor .v10-editor-matches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:16px}
+.v10-bracket-editor .v10-match-edit{min-width:0;margin:0;padding:18px}
+.v10-bracket-editor .v10-br-scroll{min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.v10-bracket-editor .v10-bracket{max-width:100%;min-width:0}
+.v10-bracket-editor input,.v10-bracket-editor select{box-sizing:border-box;max-width:100%}
+.v10-bracket-editor .v10-toolbar{padding:16px 0}
+@media(max-width:900px){
+ #modal .sheet.v10-bracket-editor{width:calc(100vw - 24px);max-width:calc(100vw - 24px)!important;padding:20px!important}
+ .v10-bracket-editor>.v10-admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ #modal:has(.v10-bracket-editor){padding:0!important}
+ #modal .sheet.v10-bracket-editor{width:100%;max-width:100%!important;min-height:100dvh;margin:0;padding:20px 14px 32px!important;border-radius:0}
+ .v10-bracket-editor>.v10-admin-grid,.v10-bracket-editor .v10-editor-matches{grid-template-columns:minmax(0,1fr)}
+ .v10-bracket-editor .v10-match-edit{padding:14px}
+}
