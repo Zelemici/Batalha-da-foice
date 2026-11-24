@@ -12,7 +12,7 @@ const bracket={
   '0-1':{winner:'C',score:'2×0'},
   '1-0':{winner:'A',score:'2×0'}
  },
- awardsTitle:false
+ layout:'tree',countAnnual:true,awardsTitle:false
 };
 const rounds=core.bracketRounds(bracket);
 assert.equal(rounds.length,2);
@@ -42,4 +42,10 @@ assert(core.validateV10(invalid).some(s=>/repetido/.test(s)));
 const invalidRank=structuredClone(doc);
 invalidRank.cfg.v10.seasons[2026].participants.push('nao-cadastrado');
 assert(core.validateV10(invalidRank).some(s=>/Ranking anual/.test(s)));
+
+const legacy=structuredClone(bracket);delete legacy.countAnnual;
+assert.deepEqual(core.annualTable({year:2026,mcList:mcs,brackets:[legacy],season:doc.cfg.v10.seasons[2026]}),[],'Edições antigas não são incluídas no ranking anual sem autorização');
+assert.deepEqual(core.annualTable({year:2027,mcList:mcs,brackets:[bracket],season:doc.cfg.v10.seasons[2026]}),[],'Nova temporada começa vazia');
+const extra=structuredClone(bracket);extra.id='extra';extra.date='2026-11-24';extra.players=['A','B','C','D'];extra.triples={};extra.results={};
+assert.equal(core.annualTable({year:2026,mcList:mcs,brackets:[extra],season:{}}).length,4,'MCs entram automaticamente após registrar nova edição');
 console.log('PASSOU: V10 — Double Three, ranking anual, bônus, ajustes e confrontos.');
