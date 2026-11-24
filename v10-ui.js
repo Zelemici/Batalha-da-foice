@@ -250,6 +250,10 @@ admRender=function(){
   sheet('Ranking anual · TOP 16','<p class="hint">O ranking começa vazio. Quando você publicar uma nova edição com a opção Contar no Ranking Anual, seus MCs entram automaticamente na tabela. Edições antigas não são incluídas sem sua autorização. O bônus 2 × 0 é acumulado em confrontos tradicionais.</p><label>Ano<input id="v10AdminYear" type="number" min="2000" max="2100" value="'+y+'"></label><div class="v10-admin-grid">'+Object.entries({segunda:'Segunda fase',semi:'Semifinal',final:'Vice',campeao:'Campeão',bonus:'Bônus por 2 × 0'}).map(([key,label])=>'<label>'+label+'<input type="number" data-v10-rule="'+key+'" min="0" max="1000" value="'+Number(s.rules[key]??core.defaults[key])+'"></label>').join('')+'</div><button class="btn on" data-v10-save-rules>Salvar regras</button><h3>Classificação automática</h3><p class="hint">Os 16 melhores pontuadores aparecem aqui automaticamente. Sem edições novas marcadas para a temporada, ninguém aparecerá.</p><div class="v10-mc-list">'+(standings().map((row,i)=>'<div class="v10-mc-row">'+avatars(mc(row.id))+'<span><strong>'+(i+1)+'º · '+h(mc(row.id)?.name||'MC')+'</strong><small>'+row.points+' pontos · '+row.wins+' vitórias</small></span></div>').join('')||'<div class="v10-empty">Temporada vazia. Publique o primeiro chaveamento da temporada.</div>')+'</div><h3>Ajustar pontos manualmente</h3><label>MC<select id="v10AdjustMC">'+options(data[0]?.id)+'</select></label><label>Pontos (negativo para desconto)<input id="v10AdjustPts" type="number" step="1" value="1"></label><label>Motivo<input id="v10AdjustReason" maxlength="200" placeholder="Correção de resultado"></label><button class="btn on" data-v10-adjust>Registrar ajuste</button><h3>Histórico de ajustes</h3>'+history(y));
  }else originalAdm();
  tabs();
+ if(admTab==='chaves'){
+  const bar=el('#adm .asheet .bar');
+  bar?.insertAdjacentHTML('afterend','<div class="v10-recover-panel"><strong>Chaveamentos desaparecidos?</strong><p class="hint">Procure edições salvas como rascunho neste navegador ou no servidor. A recuperação cria rascunhos sem sobrescrever os chaveamentos atuais.</p><button class="btn" data-v10-recover-br="local">Recuperar deste navegador</button><button class="btn" data-v10-recover-br="cloud">Verificar rascunho na nuvem</button></div>');
+ }
  if(!el('#adm .v10-pubbar')){
   const bar=el('#adm .asheet .bar');if(bar)bar.insertAdjacentHTML('afterend','<div class="v10-pubbar"><button class="btn on" data-v10-publish>Salvar e Publicar</button><small class="hint">Alterações em rascunho até confirmação do servidor</small></div>');
  }
@@ -439,6 +443,53 @@ async function upload(){
   m.videos||=[];m.videos.push({kind:'upload',url:saved.url,title});save();msg.textContent='Arquivo armazenado. Use Salvar e Publicar para liberar a exibição pública.';videoList(m.id);
  }catch(err){msg.textContent=err.message;toast(err.message,1);}finally{bar.hidden=true;}
 }
+async function recoverBrackets(source){
+ if(!canAdmin)return loginForm();
+ let stored;
+ try{
+  if(source==='local'){
+   const raw=localStorage.getItem('foice_draft');
+   stored=raw?JSON.parse(raw):null;
+  }else{
+   const result=await bdfServer('draft');
+   stored=result?.draft||null;
+  }
+ }catch(err){return toast('Não foi possível ler o rascunho: '+err.message,1);}
+ const available=Array.isArray(stored?.brackets)?stored.brackets:[];
+ if(!available.length)return toast('Nenhum chaveamento encontrado neste rascunho.');
+ const candidates=available.filter(b=>b&&Array.isArray(b.players)&&b.id);
+ if(!candidates.length)return toast('Não há chaveamentos válidos para recuperar.');
+ const missing=candidates.filter(b=>!BRACKETS.some(current=>current.id===b.id));
+ const changed=candidates.filter(b=>{
+  const current=BRACKETS.find(x=>x.id===b.id);
+  return current&&JSON.stringify(current)!==JSON.stringify(b);
+ });
+ if(!missing.length&&!changed.length)return toast('Os chaveamentos deste rascunho já estão no painel.');
+ if(!confirm('Encontrados '+missing.length+' chaveamento(s) ausente(s) e '+changed.length+' versão(ões) diferente(s). Recuperar como RASCUNHO, mantendo todos os registros atuais?'))return;
+ const known=[...data],recovered=[],newMembers=[],now=Date.now();
+ let skipped=0;
+ for(const [i,original] of [...missing,...changed].entries()){
+  try{
+   const collision=BRACKETS.some(b=>b.id===original.id)||recovered.some(b=>b.id===original.id);
+   const copy={...structuredClone(original),status:'draft'};
+   if(collision){
+    copy.id='br-recovered-'+now+'-'+i;
+    copy.title=String(original.title||'Chaveamento')+' (recuperado)';
+    delete copy.titleLink;
+   }
+   if(![4,8,16].includes(copy.players.length))throw Error('Tamanho inválido');
+   const prepared=core.prepareBracketRegistrations(copy,known);
+   known.push(...prepared.created);
+   newMembers.push(...prepared.created);
+   recovered.push(prepared.bracket);
+  }catch(err){skipped++;}
+ }
+ if(!recovered.length)return toast('Não foi possível recuperar os chaveamentos encontrados.',1);
+ data.push(...newMembers);
+ BRACKETS.push(...recovered);
+ save();render();admRender();
+ toast(recovered.length+' chaveamento(s) recuperado(s) em rascunho.'+(skipped?' '+skipped+' não foram importados.':'')+' Revise e use Salvar e Publicar quando quiser.');
+}
 async function saveAndPublish(btn){
  if(!canAdmin||!G?.t)return toast('Entre como administrador para publicar.',1);
  if(!confirm('Publicar todas as mudanças da V10 no site público?'))return;
@@ -455,7 +506,7 @@ async function saveAndPublish(btn){
  finally{btn.disabled=false;btn.textContent='Salvar e Publicar';}
 }
 async function clickAction(e){
- const btn=e.target.closest('[data-v10-mobile-login],[data-v10-show-third],[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-save-duel],[data-v10-edit-duel],[data-v10-remove-duel],[data-v10-cancel-duel],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
+ const btn=e.target.closest('[data-v10-mobile-login],[data-v10-show-third],[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-save-duel],[data-v10-edit-duel],[data-v10-remove-duel],[data-v10-cancel-duel],[data-v10-publish],[data-v10-recover-br],[data-v10-save-br],[data-v10-remove-br]');
  if(!btn)return;
  e.stopImmediatePropagation();e.preventDefault();
  const d=btn.dataset;
@@ -501,6 +552,7 @@ async function clickAction(e){
  if(d.v10SaveRules!==undefined){const r={};for(const x of els('[data-v10-rule]')){const n=Number(x.value);if(!Number.isInteger(n)||n<0||n>1000)return toast('Informe pontos entre 0 e 1.000.',1);r[x.dataset.v10Rule]=n;}staging(()=>season(year()).rules=r);toast('Regras salvas no rascunho.');return;}
  // A classificação anual não exige seleção manual de participantes.
  if(d.v10Adjust!==undefined){const id=el('#v10AdjustMC').value,delta=Number(el('#v10AdjustPts').value),reason=el('#v10AdjustReason').value.trim();if(!Number.isInteger(delta)||!delta||Math.abs(delta)>10000||!reason)return toast('Informe pontuação inteira e motivo.',1);staging(()=>{const s=season(year());(s.adjustments[id]||=[]).push({delta,reason,at:new Date().toISOString()});});toast('Ajuste registrado.');return;}
+ if(d.v10RecoverBr!==undefined)return recoverBrackets(d.v10RecoverBr);
  if(d.v10Publish!==undefined)return saveAndPublish(btn);
  if(d.v10SaveBr!==undefined)return saveBracket(d.v10SaveBr);
  if(d.v10RemoveBr!==undefined){if(!confirm('Excluir este torneio do rascunho?'))return;BRACKETS=BRACKETS.filter(x=>x.id!==d.v10RemoveBr);save();close();render();return;}
