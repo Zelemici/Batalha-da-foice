@@ -687,7 +687,7 @@ async function boot(){
  CHAMPS=j.champions2026||data.filter(m=>(m.titles?.['2026']||0)>0).map(m=>m.id);
  CFG=Object.assign({},CD,j.cfg||{});if(j.cfg?.tiers)TIERS=j.cfg.tiers;TIERS=v8NormalizeTiers(TIERS);
  const btn=document.getElementById('admBtn');if(btn){btn.hidden=false;btn.textContent='Área administrativa';}
- render();if(location.hash==='#admin')loginForm();
+ render();
 }
 const KEY='foice_v1';
 const SEED=[
@@ -1020,7 +1020,7 @@ document.addEventListener('change',e=>{
  if(e.target.id=='yearSel'||e.target.id=='stSel')render();
 });
 $('#q').addEventListener('input',render);
-addEventListener('hashchange',()=>{if(location.hash=='#admin'){if(canAdmin){editing=true;$('#adm').classList.add('open')}else loginForm()}render()});
+addEventListener('hashchange',()=>{if(location.hash==='#admin'){history.replaceState(null,'',location.pathname+location.search+'#/');}render()});
 function applyCfg(){
  applyAp();
  window._pg=(location.hash.match(/^#\/(\w+)/)||[])[1]||'home';if(window._pg==='edicoes')window._pg='chaves';const pg=window._pg;
