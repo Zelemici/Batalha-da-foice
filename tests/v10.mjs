@@ -139,3 +139,14 @@ assert(ui.includes("refreshBracketPreview();"));
 assert(ui.includes("if(point.querySelector('.v10-card-record'))continue;"));
 assert(ui.includes("if(!point.querySelector('.v10-title-share'))"));
 console.log('PASSOU: percentual para todos os MCs, três prévias e fluxo de edição sem reset parcial.');
+
+
+// Recuperação não destrutiva: existe opção local/nuvem, exige confirmação
+// e sempre importa como rascunho, sem tocar no KV automaticamente.
+assert(ui.includes('data-v10-recover-br="local"'));
+assert(ui.includes('data-v10-recover-br="cloud"'));
+assert(ui.includes("async function recoverBrackets(source){"));
+assert(ui.includes("copy={...structuredClone(original),status:'draft'}"));
+assert(ui.includes("if(oldLocal)localStorage.setItem('foice_recovery_backup_'+Date.now(),oldLocal);"));
+assert(ui.includes("BRACKETS.push(...recovered);"));
+console.log('PASSOU: recuperação não destrutiva de chaveamentos a partir de rascunhos.');
