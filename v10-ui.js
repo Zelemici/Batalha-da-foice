@@ -13,6 +13,8 @@ const avatars=m=>m?.photo?'<img src="'+h(m.photo)+'" alt="Foto de '+h(m.name)+'"
 const published=()=>BRACKETS.filter(b=>b.status==='published').slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
 const manualDuels=()=>Array.isArray(v10().manualDuels)?v10().manualDuels:(v10().manualDuels=[]);
 const career=m=>core.mcCareer(m,data,BRACKETS,manualDuels());
+const titleShareLabel=m=>core.titleShare(m,data).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+const titleShareTag=m=>'<span class="v10-title-share" title="Participação deste MC entre todos os títulos registrados">'+titleShareLabel(m)+' dos títulos do acervo</span>';
 const staging=fn=>{fn();save();render();};
 function standings(){return core.annualTable({year:year(),mcList:data,brackets:BRACKETS,season:season(year())});}
 function latest(){
@@ -20,7 +22,7 @@ function latest(){
 }
 function hall(){
  const top=data.filter(m=>total(m)>0).slice().sort((a,b)=>total(b)-total(a)||a.name.localeCompare(b.name,'pt-BR')).slice(0,3);
- return '<section class="v10-section"><div class="v10-eyebrow">História da competição</div><h2>Hall dos Campeões</h2><div class="v10-hall">'+top.map((m,i)=>'<button class="v10-champ" data-v10-profile="'+h(m.id)+'"><span class="v10-place">'+(i+1)+'º lugar</span>'+avatars(m)+'<strong>'+h(m.name)+'</strong><span>'+total(m)+' título(s)</span></button>').join('')+'</div></section>';
+ return '<section class="v10-section"><div class="v10-eyebrow">História da competição</div><h2>Hall dos Campeões</h2><div class="v10-hall">'+top.map((m,i)=>'<button class="v10-champ" data-v10-profile="'+h(m.id)+'"><span class="v10-place">'+(i+1)+'º lugar</span>'+avatars(m)+'<strong>'+h(m.name)+'</strong><span>'+total(m)+' título(s)</span>'+titleShareTag(m)+'</button>').join('')+'</div></section>';
 }
 function matchup(){
  const a=mc(v10().compareA)||data[0],b=mc(v10().compareB)||data.find(m=>m.id!==a?.id);
@@ -47,7 +49,9 @@ function decorateCards(){
   for(const card of root.querySelectorAll('[data-id].card, [data-id].sr')){
    const m=mc(card.dataset.id);if(!m)continue;
    const st=career(m),point=card.querySelector('.tags, .sr-history-meta');
-   if(!point||point.querySelector('.v10-card-record'))continue;
+   if(!point)continue;
+   if(!point.querySelector('.v10-title-share'))point.insertAdjacentHTML('beforeend',titleShareTag(m));
+   if(point.querySelector('.v10-card-record'))continue;
    const rate=st.games?st.winRate+'%':'—';
    point.insertAdjacentHTML('beforeend','<span class="v10-card-record" title="Apenas batalhas com resultados cadastrados">'+
       st.wins+' vitórias · '+rate+' win rate · '+st.twoZero+' (2 × 0)</span>');
@@ -152,6 +156,7 @@ profile=function(id){
  const photos=GAL.filter(g=>(g.status||'published')==='published'&&(g.mcIds||[]).includes(id)).flatMap(g=>mediaList(g).filter(f=>imageMedia(f.url)).map(f=>f.url)).slice(0,12);
  const vids=(m.videos||[]).filter(core.validVideo);
  const st=career(m);
+ sheet.insertAdjacentHTML('beforeend','<div class="v10-title-share-profile"><strong>'+titleShareLabel(m)+'</strong><span>dos títulos registrados pertencem a este MC · '+total(m)+' de '+data.reduce((sum,item)=>sum+total(item),0)+' títulos do acervo</span></div>');
  sheet.insertAdjacentHTML('beforeend','<div class="v10-career"><h3>Estatísticas de batalhas registradas</h3><div class="v10-stat-grid"><div><strong>'+st.games+'</strong><small>Disputadas</small></div><div><strong>'+st.wins+'</strong><small>Vitórias</small></div><div><strong>'+(st.games?st.winRate+'%':'—')+'</strong><small>Win rate</small></div><div><strong>'+st.twoZero+'</strong><small>Vitórias por 2 × 0</small></div></div><p class="hint">Só entram partidas com resultados registrados. Títulos antigos, sozinhos, não permitem calcular win rate.</p></div>');
  sheet.insertAdjacentHTML('beforeend','<div class="v10-profile"><h3>Perfil do MC</h3><div class="v10-tags">'+(m.tags||[]).map(tag=>'<span class="v10-tag">'+h(tag)+'</span>').join('')+'</div>'+(photos.length?'<h3>Galeria de fotos</h3><div class="v10-photos">'+photos.map(url=>'<img loading="lazy" src="'+h(url)+'" alt="Foto de '+h(m.name)+'">').join('')+'</div>':'')+(vids.length?'<h3>Vídeos de rimas</h3><div class="v10-videos">'+vids.map(v=>{const youtube=core.youtubeId(v.url);return '<div class="v10-video">'+(youtube?'<button class="v10-play" data-v10-play="'+youtube+'" aria-label="Reproduzir"><img loading="lazy" src="https://img.youtube.com/vi/'+youtube+'/hqdefault.jpg" alt=""><span>▶</span></button>':'<video src="'+h(v.url)+'" controls playsinline preload="none"></video>')+'<b>'+h(v.title)+'</b></div>';}).join('')+'</div>':'')+'</div>');
 };
@@ -206,7 +211,7 @@ admRender=function(){
     const t=total(m),src=m._tmp||m.photo||'';
     return '<article class="v10-admin-mc-card" data-v10-roster-mc="'+h(m.id)+'">'+
       '<div class="v10-admin-mc-face">'+(src?'<img src="'+h(src)+'" loading="lazy" alt="Foto de '+h(m.name)+'">':'<span class="v10-admin-mc-initial">'+h(m.name?.slice(0,1)||'?')+'</span>')+'</div>'+
-      '<div class="v10-admin-mc-meta"><strong title="'+h(m.name)+'">'+h(m.name)+'</strong><small>'+h(m.city||'Local não informado')+'</small><b class="v10-admin-mc-counter">'+t+' '+(t===1?'título':'títulos')+'</b></div>'+
+      '<div class="v10-admin-mc-meta"><strong title="'+h(m.name)+'">'+h(m.name)+'</strong><small>'+h(m.city||'Local não informado')+'</small><b class="v10-admin-mc-counter">'+t+' '+(t===1?'título':'títulos')+'</b><span class="v10-admin-share">'+titleShareLabel(m)+' de todos os títulos</span></div>'+
       '<div class="v10-admin-mc-actions"><button class="btn" data-edit="'+h(m.id)+'" aria-label="Editar '+h(m.name)+'">Editar</button>'+
         '<button class="btn" data-q="'+h(m.id)+'" aria-label="Somar um título para '+h(m.name)+'">+1</button>'+
         '<button class="btn" data-qm="'+h(m.id)+'" aria-label="Retirar um título de '+h(m.name)+'" '+(!t?'disabled':'')+'>−1</button>'+
@@ -266,11 +271,12 @@ function bracketEdit(id,refresh=false){
  const rounds=core.bracketRounds(b),names=data.map(m=>'<option value="'+h(m.name)+'"></option>').join('');
  const matches='<div class="v10-inline-board">'+rounds.map((ms,r)=>'<section class="v10-inline-round"><h3>'+(r===rounds.length-1?'Final':r===rounds.length-2?'Semifinal':r===0?'Primeira fase':'Segunda fase')+'</h3><div class="v10-inline-games">'+ms.map(m=>{
  const t=m.third,pts=m.result?.points||[];
- const row=(n,i)=>'<div class="v10-inline-player">'+(r===0&&i<2?'<input data-v10-br-player="'+(m.i*2+i)+'" list="v10-names" maxlength="100" placeholder="Nome do MC" aria-label="MC '+(i+1)+'" value="'+h(n||'')+'">':i===2?'<input data-v10-third="'+h(m.key)+'" list="v10-names" maxlength="100" aria-label="Terceiro MC" value="'+h(n||'')+'">':'<span class="v10-inline-name">'+h(n||'A definir')+'</span>')+'<input class="v10-inline-point" data-v10-pts="'+h(m.key)+'" data-v10-pos="'+i+'" type="number" min="0" max="99" aria-label="Pontos do MC '+(i+1)+'" value="'+(pts[i]??0)+'" '+(!t?'disabled':'')+'></div>';
- return '<div class="v10-inline-match"><strong>Confronto '+(m.i+1)+'</strong>'+row(m.a,0)+row(m.c,1)+(t?row(t,2):'<button class="btn v10-inline-third-btn" type="button" data-v10-show-third="'+h(m.key)+'">+ Terceiro MC</button>')+'<div class="v10-inline-controls">'+(!t?'<label>Placar<select data-v10-outcome="'+h(m.key)+'"><option value="">Pendente</option>'+['2×0','2×1','W.O.'].map(x=>'<option value="'+x+'" '+(m.result?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>':'<span class="hint">Placar por pontos</span>')+'<label>Vencedor<select data-v10-win="'+h(m.key)+'"><option value="">A definir</option>'+m.participants.map(n=>'<option value="'+h(n)+'" '+(m.result?.winner===n?'selected':'')+'>'+h(n)+'</option>').join('')+'</select></label></div></div>';
+ const row=(n,i)=>'<div class="v10-inline-player">'+(r===0&&i<2?'<input data-v10-br-player="'+(m.i*2+i)+'" list="v10-names" maxlength="100" placeholder="Nome do MC" aria-label="MC '+(i+1)+'" value="'+h(n||'')+'">':i===2?'<input data-v10-third="'+h(m.key)+'" list="v10-names" maxlength="100" aria-label="Terceiro MC" value="'+h(n||'')+'">':'<span class="v10-inline-name" data-v10-next-name="'+h(m.key)+'" data-v10-next-pos="'+i+'">'+h(n||'A definir')+'</span>')+'<input class="v10-inline-point" data-v10-pts="'+h(m.key)+'" data-v10-pos="'+i+'" type="number" min="0" max="99" aria-label="Pontos do MC '+(i+1)+'" value="'+(pts[i]??0)+'" '+(!t?'disabled':'')+'></div>';
+ return '<div class="v10-inline-match" data-v10-match="'+h(m.key)+'"><strong>Confronto '+(m.i+1)+'</strong>'+row(m.a,0)+row(m.c,1)+(t?row(t,2):'<button class="btn v10-inline-third-btn" type="button" data-v10-show-third="'+h(m.key)+'">+ Terceiro MC</button>')+'<div class="v10-inline-controls">'+(!t?'<label>Placar<select data-v10-outcome="'+h(m.key)+'"><option value="">Pendente</option>'+['2×0','2×1','W.O.'].map(x=>'<option value="'+x+'" '+(m.result?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>':'<span class="hint">Placar por pontos</span>')+'<label>Vencedor<select data-v10-win="'+h(m.key)+'"><option value="">A definir</option>'+m.participants.map(n=>'<option value="'+h(n)+'" '+(m.result?.winner===n?'selected':'')+'>'+h(n)+'</option>').join('')+'</select></label></div></div>';
  }).join('')+'</div></section>').join('')+'</div>';
- open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha um MC da lista ou digite o nome de um MC novo. Ao salvar a chave, participantes novos serão cadastrados automaticamente, sem títulos, para você editar a foto e o perfil em MCs sem títulos. Só um MC avança por confronto.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Chaveamento editável</h3><p class="hint">Digite os MCs e registre placares diretamente nos confrontos. As fases seguintes são preenchidas pelos vencedores. O público vê o modelo escolhido.</p>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
+ open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha um MC da lista ou digite o nome de um MC novo. Ao salvar a chave, participantes novos serão cadastrados automaticamente, sem títulos, para você editar a foto e o perfil em MCs sem títulos. Só um MC avança por confronto.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Chaveamento editável</h3><p class="hint">Digite os MCs e registre placares diretamente nos confrontos. As fases seguintes são preenchidas pelos vencedores. O público vê o modelo escolhido.</p>'+matches+'<section class="v10-preview-wrap"><h3>Prévia do chaveamento escolhido</h3><p class="hint">Veja abaixo como o público verá o modelo selecionado. Esta prévia não publica nem substitui seus dados.</p><div id="v10BracketPreview" class="v10-preview-board"></div></section>'+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
  el('#modal .sheet')?.classList.add('v10-bracket-editor');
+ refreshBracketPreview();
 }
 
 function readBracketMeta(b){
@@ -281,41 +287,113 @@ function readBracketMeta(b){
  const link=el('#v8TitleLink')?.value||'';
  b.titleLink=v8AvailableTitleSlots(b).find(x=>v8TitleKey(x)===link);
 }
+
+function refreshBracketPreview(){
+ const box=el('#v10BracketPreview');
+ if(!box||!bracketDraft)return;
+ // Mesma apresentação usada na área pública, sem enviar nada ao servidor.
+ box.innerHTML=v6BracketHtml({...bracketDraft,status:'draft'});
+ treeRefresh();
+}
+function syncBracketMatchControls(b,{resetScores=false}={}){
+ const rounds=core.bracketRounds(b).flat();
+ for(const match of rounds){
+  const key=match.key;
+  for(const span of els('[data-v10-next-name="'+key+'"]')){
+   const i=Number(span.dataset.v10NextPos);
+   span.textContent=([match.a,match.c,match.third][i]||'A definir');
+  }
+  const winner=el('[data-v10-win="'+key+'"]');
+  if(winner){
+   const chosen=match.result?.winner||(match.participants.includes(winner.value)?winner.value:'');
+   winner.innerHTML='<option value="">A definir</option>'+match.participants.map(n=>'<option value="'+h(n)+'">'+h(n)+'</option>').join('');
+   winner.value=chosen;
+  }
+  const score=el('[data-v10-outcome="'+key+'"]');
+  if(resetScores&&score)score.value=match.result?.score||'';
+ }
+}
+function rerenderBracketDraft(b){
+ const scroll=el('#modal')?.scrollTop||0;
+ bracketEdit(b.id,true);
+ if(el('#modal'))el('#modal').scrollTop=scroll;
+}
 document.addEventListener('change',e=>{
- const x=e.target,b=bracketDraft;if(!canAdmin||!b||!el('#v10BrTitle'))return;
+ const x=e.target,b=bracketDraft;
+ if(!canAdmin||!b||!el('#v10BrTitle'))return;
  const d=x.dataset;
- if(!x.matches('#v10BrSize,#v10BrLayout,[data-v10-br-player],[data-v10-third],[data-v10-win],[data-v10-outcome],[data-v10-pts]'))return;
+ const controls='#v10BrSize,#v10BrLayout,#v10BrTitle,#v10BrDate,#v10BrNum,#v10BrStatus,#v10BrAnnual,#v10BrNoTitle,[data-v10-br-player],[data-v10-third],[data-v10-win],[data-v10-outcome],[data-v10-pts]';
+ if(!x.matches(controls))return;
  const previous=structuredClone(b);
  try{
- readBracketMeta(b);
- if(x.id==='v10BrSize'){
- const size=Number(x.value);if(size!==b.players.length){
- if(Object.keys(b.results||{}).length&&!confirm('Alterar o tamanho limpa os resultados. Continuar?')){x.value=b.players.length;return;}
- b.players=Array.from({length:size},(_,i)=>b.players[i]||'');b.results={};b.triples={};}
- }else if(d.v10BrPlayer!==undefined){
- const i=Number(d.v10BrPlayer),n=core.canonicalMCName(x.value,data);
- if(n&&(n.length>100||/[<>\x00-\x1f]/.test(n)))throw Error('Nome inválido: use até 100 caracteres.');
- if(n&&b.players.some((v,j)=>j!==i&&core.mcNameKey(v)===core.mcNameKey(n)))throw Error('MC já está em outra vaga.');
- if(n&&Object.entries(b.triples||{}).some(([k,v])=>k.startsWith('0-')&&core.mcNameKey(v)===core.mcNameKey(n)))throw Error('MC já está em outro confronto.');
- if(b.players[i]!==n){b.players[i]=n;core.invalidateBracketPath(b,'0-'+Math.floor(i/2));}
- }else if(d.v10Third!==undefined){
- const k=d.v10Third,n=core.canonicalMCName(x.value,data),m=core.bracketRounds(b).flat().find(v=>v.key===k);
- if(n&&(n.length>100||/[<>\x00-\x1f]/.test(n)||[m.a,m.c].some(p=>core.mcNameKey(p)===core.mcNameKey(n))))throw Error('Informe um terceiro MC diferente, com até 100 caracteres.');
- if(n&&k.startsWith('0-')&&(b.players.some(p=>core.mcNameKey(p)===core.mcNameKey(n))||Object.entries(b.triples||{}).some(([j,v])=>j!==k&&j.startsWith('0-')&&core.mcNameKey(v)===core.mcNameKey(n))))throw Error('MC já está na primeira fase.');
- b.triples||={};if((b.triples[k]||'')!==n){if(n)b.triples[k]=n;else delete b.triples[k];core.invalidateBracketPath(b,k);}
- }else if(x.id!=='v10BrLayout'){
- const k=d.v10Win||d.v10Outcome||d.v10Pts;
- const m=core.bracketRounds(b).flat().find(v=>v.key===k);
- const winner=el('[data-v10-win="'+k+'"]').value;
- const score=el('[data-v10-outcome="'+k+'"]')?.value||'';
- const points=els('[data-v10-pts="'+k+'"]').map(v=>Number(v.value));
- if(!winner||(!m.third&&!score)){if(m.result)core.invalidateBracketPath(b,k);}else{
- core.setBracketResult(b,k,{winner,score,points});
+  readBracketMeta(b);
+  if(x.id==='v10BrSize'){
+   const size=Number(x.value);
+   if(size!==b.players.length){
+    if(Object.keys(b.results||{}).length&&!confirm('Alterar o tamanho limpa os resultados. Continuar?')){x.value=String(b.players.length);return;}
+    b.players=Array.from({length:size},(_,i)=>b.players[i]||'');
+    b.results={};b.triples={};
+    rerenderBracketDraft(b);
+   }
+  }else if(d.v10BrPlayer!==undefined){
+   const i=Number(d.v10BrPlayer),n=core.canonicalMCName(x.value,data);
+   if(n&&(n.length>100||/[<>\x00-\x1f]/.test(n)))throw Error('Nome inválido: use até 100 caracteres.');
+   if(n&&b.players.some((v,j)=>j!==i&&core.mcNameKey(v)===core.mcNameKey(n)))throw Error('MC já está em outra vaga.');
+   if(n&&Object.entries(b.triples||{}).some(([k,v])=>k.startsWith('0-')&&core.mcNameKey(v)===core.mcNameKey(n)))throw Error('MC já está em outro confronto.');
+   if(b.players[i]!==n){
+    b.players[i]=n;core.invalidateBracketPath(b,'0-'+Math.floor(i/2));
+    x.value=n;syncBracketMatchControls(b,{resetScores:true});
+   }
+  }else if(d.v10Third!==undefined){
+   const k=d.v10Third,n=core.canonicalMCName(x.value,data),m=core.bracketRounds(b).flat().find(v=>v.key===k);
+   if(n&&(n.length>100||/[<>\x00-\x1f]/.test(n)||[m.a,m.c].some(p=>core.mcNameKey(p)===core.mcNameKey(n))))throw Error('Informe um terceiro MC diferente, com até 100 caracteres.');
+   if(n&&k.startsWith('0-')&&(b.players.some(p=>core.mcNameKey(p)===core.mcNameKey(n))||Object.entries(b.triples||{}).some(([j,v])=>j!==k&&j.startsWith('0-')&&core.mcNameKey(v)===core.mcNameKey(n))))throw Error('MC já está na primeira fase.');
+   b.triples||={};
+   if((b.triples[k]||'')!==n){
+    if(n)b.triples[k]=n;else delete b.triples[k];
+    core.invalidateBracketPath(b,k);
+    // O Double Three troca o placar tradicional por pontos individuais.
+    const holder=x.closest('.v10-inline-match');
+    if(holder){
+     const classic=holder.querySelector('[data-v10-outcome]')?.closest('label');
+     if(classic)classic.hidden=Boolean(n);
+     holder.querySelectorAll('[data-v10-pts]').forEach(pts=>pts.disabled=!n);
+    }
+    x.value=n;syncBracketMatchControls(b,{resetScores:true});
+   }
+  }else if(d.v10Win!==undefined||d.v10Outcome!==undefined||d.v10Pts!==undefined){
+   const k=d.v10Win||d.v10Outcome||d.v10Pts;
+   const m=core.bracketRounds(b).flat().find(v=>v.key===k);
+   if(!m)throw Error('Confronto não encontrado.');
+   const winner=el('[data-v10-win="'+k+'"]')?.value||'';
+   const score=el('[data-v10-outcome="'+k+'"]')?.value||'';
+   const points=els('[data-v10-pts="'+k+'"]').map(v=>Number(v.value));
+   // Não recriar o editor enquanto o usuário escolhe placar E vencedor.
+   // Isso preserva o 2x0/2x1/W.O. até que ambos estejam preenchidos.
+   if(winner&&(m.third||score)){
+    core.setBracketResult(b,k,{winner,score,points});
+    rerenderBracketDraft(b);
+   }else if(m.result){
+    core.invalidateBracketPath(b,k);
+    syncBracketMatchControls(b,{resetScores:false});
+   }
+  }
+  refreshBracketPreview();
+ }catch(err){
+  bracketDraft=previous;
+  toast(err.message,1);
+  rerenderBracketDraft(previous);
  }
- const scroll=el('#modal')?.scrollTop||0;bracketEdit(b.id,true);if(el('#modal'))el('#modal').scrollTop=scroll;
- }
- }catch(err){bracketDraft=previous;toast(err.message,1);bracketEdit(previous.id,true);}
 },true);
+document.addEventListener('input',e=>{
+ const x=e.target;
+ if(!bracketDraft||!canAdmin||!el('#v10BrTitle'))return;
+ if(x.id==='v10BrTitle'){
+  bracketDraft.title=x.value;
+  refreshBracketPreview();
+ }
+},true);
+
 function saveBracket(id){
  const b=bracketDraft;if(!canAdmin||!b||b.id!==id)return;
  readBracketMeta(b);
