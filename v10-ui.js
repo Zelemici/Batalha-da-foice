@@ -313,6 +313,7 @@ document.addEventListener('change',e=>{
  core.setBracketResult(b,k,{winner,score,points});
  }
  const scroll=el('#modal')?.scrollTop||0;bracketEdit(b.id,true);if(el('#modal'))el('#modal').scrollTop=scroll;
+ }
  }catch(err){bracketDraft=previous;toast(err.message,1);bracketEdit(previous.id,true);}
 },true);
 function saveBracket(id){
