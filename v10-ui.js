@@ -56,6 +56,12 @@ function decorateCards(){
 }
 function decorate(){
  if(!data.length)return;
+ // Participantes sem título ficam no cadastro administrativo e nos confrontos,
+ // mas não entram nos cards históricos da página inicial.
+ for(const card of el('#top2')?.querySelectorAll('[data-id]')||[]){
+  const member=mc(card.dataset.id);
+  if(member&&total(member)===0)card.remove();
+ }
  decorateCards();
  const home=el('#pgHome');if(!home)return;
  let top=el('#v10-top');if(!top){top=document.createElement('div');top.id='v10-top';home.prepend(top);}
