@@ -1,3 +1,4 @@
+import '../../v10-core.js';
 /* Cloudflare Pages Functions — autorização feita NO SERVIDOR. */
 const encoder = new TextEncoder();
 const JSON_HEADERS = {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
@@ -57,6 +58,7 @@ export function validate(d,{forPublish=false}={}){
   for(const b of d.brackets||[])if(b.status==='published'&&b.awardsTitle!==false&&!b.titleLink)issues.push('Edição publicada sem vínculo de título: '+(b.title||''));
   for(const g of d.gallery||[])if(g.status==='published'&&(!g.id||!g.title))issues.push('Galeria publicada sem identificação');
  }
+ issues.push(...globalThis.BDFV10Core.validateV10(d));
  return [...new Set(issues)].slice(0,30);
 }
 export function publicCopy(d){const o={schemaVersion:2,data:d.data,cfg:d.cfg||{},events:(d.events||[]).filter(x=>(x.status||'published')==='published'),gallery:(d.gallery||[]).filter(x=>(x.status||'published')==='published'),champions2026:d.champions2026||[],brackets:(d.brackets||[]).filter(x=>x.status==='published')};return o;}
