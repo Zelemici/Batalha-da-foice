@@ -265,10 +265,10 @@ function bracketEdit(id,refresh=false){
  window._v6Editing=b.id;
  const rounds=core.bracketRounds(b),names=data.map(m=>'<option value="'+h(m.name)+'"></option>').join('');
  const matches=rounds.map((ms,r)=>'<h3>'+['Primeira fase','Segunda fase','Semifinal','Final'][r]+'</h3>'+ms.map(m=>{
-  const pick=(n,i)=>'<label>MC '+(i%2+1)+'<select data-v10-br-player="'+i+'"><option value="">Selecionar MC</option>'+data.map(x=>'<option value="'+h(x.name)+'" '+(x.name===n?'selected':'')+'>'+h(x.name)+'</option>').join('')+'</select></label>'; const t=m.third,points=m.result?.points||m.participants.map(()=>0);
+  const pick=(n,i)=>'<label>MC '+(i%2+1)+'<input data-v10-br-player="'+i+'" list="v10-names" maxlength="100" placeholder="Selecione ou digite um novo MC" autocomplete="off" value="'+h(n)+'"></label>'; const t=m.third,points=m.result?.points||m.participants.map(()=>0);
   return '<div class="v10-match-edit"><b>Confronto '+(m.i+1)+' · '+h(m.key)+'</b>'+(r===0?pick(m.a,m.i*2)+pick(m.c,m.i*2+1):'')+'<p>'+h(m.a||'A definir')+' × '+h(m.c||'A definir')+(t?' × '+h(t):'')+'</p><div class="v10-third"><button type="button" class="btn" data-v10-show-third="'+h(m.key)+'" '+(t?'hidden':'')+'>+ Adicionar terceiro MC</button><label data-v10-third-wrap="'+h(m.key)+'" '+(t?'':'hidden')+'>Terceiro MC (limpe para remover)<input data-v10-third="'+h(m.key)+'" list="v10-names" placeholder="Nome do terceiro MC" value="'+h(t||'')+'"></label></div>'+m.participants.map((n,i)=>'<label class="v10-score-row">'+h(n)+'<input type="number" min="0" max="99" data-v10-pts="'+h(m.key)+'" data-v10-pos="'+i+'" value="'+(points[i]??0)+'" '+(t?'':'disabled')+'></label>').join('')+(t?'':'<label>Placar do duelo <select data-v10-outcome="'+h(m.key)+'"><option value="">Pendente</option>'+['2×0','2×1','W.O.'].map(x=>'<option value="'+x+'" '+(m.result?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>')+'<label>Vencedor <select data-v10-win="'+h(m.key)+'"><option value="">Ainda não definido</option>'+m.participants.map(n=>'<option value="'+h(n)+'" '+(m.result?.winner===n?'selected':'')+'>'+h(n)+'</option>').join('')+'</select></label></div>';
  }).join('')).join('');
- open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha até três MCs por confronto. Só um avança. Em caso de empate, selecione manualmente o vencedor. Escolha os MCs e os vencedores diretamente nos confrontos. As próximas fases são atualizadas automaticamente.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Prévia da chave no modelo selecionado</h3>'+v6BracketHtml(b)+'<p class="hint">A prévia acompanha as alterações dos confrontos. O público verá somente o modelo escolhido nesta edição.</p><h3>Resultados · placares abaixo de cada confronto</h3>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
+ open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha um MC da lista ou digite o nome de um MC novo. Ao salvar a chave, participantes novos serão cadastrados automaticamente, sem títulos, para você editar a foto e o perfil em MCs sem títulos. Só um MC avança por confronto.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Prévia da chave no modelo selecionado</h3>'+v6BracketHtml(b)+'<p class="hint">A prévia acompanha as alterações dos confrontos. O público verá somente o modelo escolhido nesta edição.</p><h3>Resultados · placares abaixo de cada confronto</h3>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
 }
 
 function readBracketMeta(b){
@@ -291,14 +291,15 @@ document.addEventListener('change',e=>{
  if(Object.keys(b.results||{}).length&&!confirm('Alterar o tamanho limpa os resultados. Continuar?')){x.value=b.players.length;return;}
  b.players=Array.from({length:size},(_,i)=>b.players[i]||'');b.results={};b.triples={};}
  }else if(d.v10BrPlayer!==undefined){
- const i=Number(d.v10BrPlayer),n=x.value;
- if(n&&b.players.some((v,j)=>j!==i&&v===n))throw Error('MC já está em outra vaga.');
- if(n&&Object.entries(b.triples||{}).some(([k,v])=>k.startsWith('0-')&&v===n))throw Error('MC já está em outro confronto.');
+ const i=Number(d.v10BrPlayer),n=core.canonicalMCName(x.value,data);
+ if(n&&(n.length>100||/[<>\\x00-\\x1f]/.test(n)))throw Error('Nome inválido: use até 100 caracteres.');
+ if(n&&b.players.some((v,j)=>j!==i&&core.mcNameKey(v)===core.mcNameKey(n)))throw Error('MC já está em outra vaga.');
+ if(n&&Object.entries(b.triples||{}).some(([k,v])=>k.startsWith('0-')&&core.mcNameKey(v)===core.mcNameKey(n)))throw Error('MC já está em outro confronto.');
  if(b.players[i]!==n){b.players[i]=n;core.invalidateBracketPath(b,'0-'+Math.floor(i/2));}
  }else if(d.v10Third!==undefined){
- const k=d.v10Third,n=x.value.trim(),m=core.bracketRounds(b).flat().find(v=>v.key===k);
- if(n&&(!data.some(v=>v.name===n)||n===m.a||n===m.c))throw Error('Selecione um terceiro MC diferente e cadastrado.');
- if(n&&k.startsWith('0-')&&(b.players.includes(n)||Object.entries(b.triples||{}).some(([j,v])=>j!==k&&j.startsWith('0-')&&v===n)))throw Error('MC já está na primeira fase.');
+ const k=d.v10Third,n=core.canonicalMCName(x.value,data),m=core.bracketRounds(b).flat().find(v=>v.key===k);
+ if(n&&(n.length>100||/[<>\\x00-\\x1f]/.test(n)||[m.a,m.c].some(p=>core.mcNameKey(p)===core.mcNameKey(n))))throw Error('Informe um terceiro MC diferente, com até 100 caracteres.');
+ if(n&&k.startsWith('0-')&&(b.players.some(p=>core.mcNameKey(p)===core.mcNameKey(n))||Object.entries(b.triples||{}).some(([j,v])=>j!==k&&j.startsWith('0-')&&core.mcNameKey(v)===core.mcNameKey(n))))throw Error('MC já está na primeira fase.');
  b.triples||={};if((b.triples[k]||'')!==n){if(n)b.triples[k]=n;else delete b.triples[k];core.invalidateBracketPath(b,k);}
  }else if(x.id!=='v10BrLayout'){
  const k=d.v10Win||d.v10Outcome||d.v10Pts;
@@ -316,9 +317,17 @@ function saveBracket(id){
  const b=bracketDraft;if(!canAdmin||!b||b.id!==id)return;
  readBracketMeta(b);
  if(!b.title)return toast('Informe o nome da edição.',1);
- if(!v8SaveBracketLink(b))return;
+ let prepared;
+ try{prepared=core.prepareBracketRegistrations(b,data);}catch(err){return toast(err.message,1);}
+ if(!v8SaveBracketLink(prepared.bracket))return;
  const i=BRACKETS.findIndex(x=>x.id===id);if(i<0)return;
- BRACKETS[i]=structuredClone(b);save();render();bracketEdit(id);toast('Chave e placares salvos no rascunho.');
+ // Só cadastra MCs novos depois de validar todo o chaveamento. Nada é
+ // publicado no servidor até o botão geral Salvar e Publicar do ADM.
+ for(const member of prepared.created)data.push(member);
+ BRACKETS[i]=structuredClone(prepared.bracket);
+ bracketDraft=structuredClone(prepared.bracket);
+ save();render();bracketEdit(id);
+ toast(prepared.created.length?prepared.created.length+' MC(s) novo(s) cadastrado(s) sem títulos. Abra a aba MCs sem títulos para adicionar fotos.':'Chave e placares salvos no rascunho.');
 }
 v6BracketEdit=bracketEdit;
 v6SaveBracket=saveBracket;
