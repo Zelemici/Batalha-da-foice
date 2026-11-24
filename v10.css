@@ -164,3 +164,45 @@
 .v10-cal-edition a{color:#e5ad65}
 .v10-fighter small{color:#efc28c;font-size:12px}
 @media(max-width:670px){.v10-tree{gap:48px}.v10-tree-games{grid-template-columns:repeat(var(--v10-leaves),minmax(145px,1fr))}.v10-tree-match{width:min(154px,calc(100% - 6px))}.v10-stat-grid{grid-template-columns:repeat(2,minmax(80px,1fr))}}
+
+/* V10: o público mantém as fontes, as cores e a identidade visual da V9.
+   Estes ajustes afetam apenas os módulos novos, sem alterar os cards originais. */
+.v10-section,.v10-calendar-results{background:var(--panel);color:var(--tx);border-color:var(--line);border-radius:var(--r,14px)}
+.v10-section h2,.v10-br-round h4,.v10-br-center h4,.v10-tree-round h4{font-family:var(--ft),Impact,sans-serif}
+.v10-eyebrow,.v10-vs span,.v10-place,.v10-table th,.v10-table td:last-child strong{color:var(--acc)}
+.v10-champ,.v10-highlight>div,.v10-mc-row,.v10-career,.v10-details,.v10-tag,.v10-stat-grid>div{border-color:var(--line);background:var(--bg);color:var(--tx)}
+.v10-champ:nth-child(1){background:var(--panel);border-color:var(--acc)}
+.v10-champ>img,.v10-fighter>img,.v10-avatar{border-color:var(--acc)}
+.v10-avatar{background:var(--panel);color:var(--acc)}
+.v10-fighter select,.v10-year select{background:var(--panel);color:var(--tx);border-color:var(--line)}
+.v10-fighter strong,.v10-fighter small,.v10-highlight strong,.v10-highlight small,.v10-details summary,.v10-tag,.v10-cal-edition a,.v10-link{color:var(--tx)}
+.v10-vs small,.v10-section .hint{color:var(--mut)}
+.v10-bracket{background:var(--bg);border-color:var(--line)}
+.v10-br-match,.v10-tree-match .v10-br-match,.v10-br-center{background:var(--panel);border-color:var(--line)}
+.v10-br-player,.v10-br-score{color:var(--tx)}
+.v10-br-player.v10-br-win{color:var(--tx);background:color-mix(in srgb,var(--acc) 15%,var(--panel))}
+.v10-br-player strong,.v10-bracket .v6-champion,.v10-br-center h4,.v10-br-round h4{color:var(--acc)}
+.v10-tree-wires path{stroke:var(--acc)}
+
+/* V10 ADM: participantes em quadradinhos, semelhantes a uma grade de confrontos.
+   Separação por situação de título, preservando os botões rápidos da V9. */
+.v10-roster-tools,.v10-roster-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
+.v10-roster-tools label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut)}
+.v10-roster-tools input{max-width:94px}
+.v10-admin-roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:13px;margin:16px 0 26px}
+.v10-admin-mc-card{min-width:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel);display:flex;flex-direction:column;box-shadow:0 3px 14px #0003;transition:border-color .2s,transform .2s}
+.v10-admin-mc-card:hover{border-color:var(--acc);transform:translateY(-1px)}
+.v10-admin-mc-face{width:100%;aspect-ratio:1.15;display:grid;place-items:center;overflow:hidden;background:var(--bg)}
+.v10-admin-mc-face img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.v10-admin-mc-initial{font:clamp(38px,6vw,65px) var(--ft),sans-serif;color:var(--acc)}
+.v10-admin-mc-meta{display:flex;flex-direction:column;gap:3px;padding:10px 11px 8px;min-width:0;flex:1}
+.v10-admin-mc-meta strong{font-size:15px;line-height:1.2;overflow-wrap:anywhere}
+.v10-admin-mc-meta small{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v10-admin-mc-counter{font-size:11px;color:var(--acc);margin-top:5px}
+.v10-admin-mc-actions{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:4px;padding:8px;border-top:1px solid var(--line)}
+.v10-admin-mc-actions .btn{min-width:0;padding:8px 4px;font-size:12px}
+.v10-admin-mc-actions [data-edit]{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.v10-admin-mc-actions [disabled]{opacity:.35;cursor:not-allowed}
+.v10-roster-bulk{padding:11px;border:1px solid var(--line);border-radius:10px;margin:10px 0}
+.v10-roster-bulk summary{cursor:pointer;color:var(--acc)}
+@media(max-width:560px){.v10-admin-roster-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.v10-admin-mc-face{aspect-ratio:1}.v10-admin-mc-actions{gap:3px;padding:5px}.v10-admin-mc-actions .btn{font-size:11px;padding:7px 2px}.v10-roster-tools{align-items:flex-start}}
