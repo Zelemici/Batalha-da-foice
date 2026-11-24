@@ -98,3 +98,16 @@ assert.throws(()=>core.prepareBracketRegistrations({players:['A'.repeat(101),'',
 assert.equal(core.canonicalMCName('  MC   Antigo  ',known),'MC Antigo');
 
 console.log('PASSOU: V10 — Double Three, ranking anual, bônus, duelos manuais e win rate.');
+
+
+// Regressão: todos os MCs permanecem visíveis no cadastro administrativo,
+// com filtro específico para quem não tem títulos.
+import fs from 'node:fs';
+const ui=fs.readFileSync(new URL('../v10-ui.js',import.meta.url),'utf8');
+assert(ui.includes("['v10-sem-titulos','MCs sem títulos']"));
+assert(ui.includes("['v10-com-titulos','MCs com títulos']"));
+assert(ui.includes("onlyRanked=kind==='v10-com-titulos'"));
+assert(ui.includes("onlyUnranked?total(m)===0:onlyRanked?total(m)>0:true"));
+assert(ui.includes("kind==='mcs'||kind==='v10-cadastro'"));
+assert(ui.includes("ranked=function(){return originalRanked().filter(m=>total(m)>0);}"));
+console.log('PASSOU: cadastro ADM mostra também os MCs sem títulos; ranking histórico continua separado.');
