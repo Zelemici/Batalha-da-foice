@@ -262,3 +262,19 @@
 .v10-bracket-editor .v10-inline-controls select{width:100%;min-height:35px;margin-top:4px}
 .v10-bracket-editor .v10-inline-controls>.hint{align-self:center}
 @media(max-width:720px){.v10-bracket-editor .v10-inline-games{grid-template-columns:minmax(0,1fr)}}
+
+/* Participação percentual no acervo, distinta do win rate de batalhas. */
+.v10-title-share{display:inline-flex;align-items:center;max-width:100%;gap:4px;white-space:normal;overflow-wrap:anywhere;border:1px solid color-mix(in srgb,var(--acc) 40%,var(--line));border-radius:7px;padding:5px 8px;color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,transparent);font-size:11px;font-weight:800;line-height:1.35}
+.v10-champ .v10-title-share{justify-content:center;text-align:center}
+.v10-admin-share{font-size:11px;font-weight:700;color:var(--mut);line-height:1.35}
+.v10-title-share-profile{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0;padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.v10-title-share-profile strong{font:400 30px/1 var(--ft),Impact,sans-serif;color:var(--acc)}
+.v10-title-share-profile span{flex:1;min-width:150px;font-size:13px;line-height:1.45;color:var(--tx)}
+/* Visualização do modelo selecionado antes de salvar/publicar. */
+.v10-bracket-editor .v10-preview-wrap{margin:30px 0 24px;padding:clamp(12px,2vw,20px);border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.v10-bracket-editor .v10-preview-wrap>h3{margin:0 0 8px;font-size:20px}
+.v10-bracket-editor .v10-preview-board{min-height:90px;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain}
+.v10-bracket-editor .v10-preview-board .v10-bracket{margin:12px 0 6px;max-width:100%}
+.v10-bracket-editor .v10-preview-board [data-v6-editbr]{display:none!important}
+.v10-bracket-editor .v10-preview-board .v10-br-scroll{overflow-x:auto;max-width:100%}
+@media(max-width:620px){.v10-bracket-editor .v10-preview-wrap{padding:12px}.v10-title-share{font-size:10px;padding:4px 6px}}
