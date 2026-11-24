@@ -73,7 +73,7 @@
   }
   // Resultados avulsos usam IDs estáveis de MC, não dependem de chaves históricas.
   // O ADM deve registrar apenas confrontos que não constem de um chaveamento.
-  function isTwoZero(score){return /^2\\s*[×xX-]\\s*0$/.test(String(score||'').trim());}
+  function isTwoZero(score){return /^2\s*[×xX-]\s*0$/.test(String(score||'').trim());}
   function completedBattles(brackets=[],manualDuels=[],mcList=[]){
     const byName=new Map(mcList.map(m=>[m.name,m.id]));
     const out=[];
@@ -173,7 +173,7 @@
            ![duel.aId,duel.bId].includes(duel.winnerId)||
            typeof duel.score!=='string'||!['2×0','2×1','W.O.','Outro'].includes(duel.score)||
            typeof duel.edition!=='string'||!duel.edition.trim()||duel.edition.length>150||
-           typeof duel.date!=='string'||(duel.date&&!/^\\d{4}-\\d{2}-\\d{2}$/.test(duel.date)))
+           typeof duel.date!=='string'||(duel.date&&!/^\d{4}-\d{2}-\d{2}$/.test(duel.date)))
            issues.push('Resultado de confronto manual inválido');
         if(duel?.id)seenDuels.add(duel.id);
       }
