@@ -22,12 +22,24 @@
     return rounds;
   }
   function annualTable({year,mcList=[],brackets=[],season={}}){
-    const participants=Array.isArray(season.participants)?season.participants.slice(0,16):[];
+    // A temporada começa vazia. Participantes entram somente quando um
+    // chaveamento é publicado com a opção "Contar no Ranking Anual" marcada.
+    // Edições antigas sem essa marca não são importadas retroativamente.
     const byId=new Map(mcList.map(m=>[m.id,m]));
     const byName=new Map(mcList.map(m=>[m.name,m]));
-    const totals=new Map(participants.filter(id=>byId.has(id)).map(id=>[id,{id,stage:0,bonus:0,manual:0,wins:0,games:0,automatic:0,points:0}]));
+    const included=brackets.filter(b=>b.status==='published'&&b.countAnnual===true&&String(b.date||'').startsWith(String(year)));
+    const participants=new Set();
+    for(const b of included){
+      for(const match of bracketRounds(b).flat()){
+        for(const name of match.participants){
+          const m=byName.get(name);
+          if(m)participants.add(m.id);
+        }
+      }
+    }
+    const totals=new Map([...participants].map(id=>[id,{id,stage:0,bonus:0,manual:0,wins:0,games:0,automatic:0,points:0}]));
     const rule=rules(season.rules);
-    for(const b of brackets.filter(b=>b.status==='published'&&String(b.date||'').startsWith(String(year)))){
+    for(const b of included){
       const rounds=bracketRounds(b),highest=new Map();
       rounds.forEach((matches,r)=>matches.forEach(match=>{
         for(const n of match.participants){const m=byName.get(n);if(m)highest.set(m.id,Math.max(r,highest.get(m.id)??-1));}
@@ -57,7 +69,7 @@
       row.automatic=row.stage+row.bonus;
       row.points=row.automatic+row.manual;
     }
-    return [...totals.values()].sort((a,b)=>b.points-a.points||b.wins-a.wins||byId.get(a.id).name.localeCompare(byId.get(b.id).name,'pt-BR'));
+    return [...totals.values()].sort((a,b)=>b.points-a.points||b.wins-a.wins||byId.get(a.id).name.localeCompare(byId.get(b.id).name,'pt-BR')).slice(0,16);
   }
   function duelHistory(a,b,brackets=[]){
     const out={a:0,b:0,matches:[]};
