@@ -61,7 +61,7 @@
         const m=byName.get(match.result.winner),row=m&&totals.get(m.id);
         if(!row)continue;
         row.wins++;
-        if(!match.third&&String(match.result.score||'').replace(/\s/g,'').replace(/x/i,'×')==='2×0')row.bonus+=rule.bonus;
+        if(!match.third&&match.r<2&&String(match.result.score||'').replace(/\s/g,'').replace(/x/i,'×')==='2×0')row.bonus+=rule.bonus;
       }
     }
     for(const row of totals.values()){
