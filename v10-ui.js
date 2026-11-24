@@ -66,6 +66,7 @@ function decorate(){
  if(cal){
   const editions=published().filter(b=>b.date);
   const list=editions.map(b=>'<div class="v10-cal-edition"><strong>'+h(b.date)+' · '+h(b.title)+'</strong><a href="#/edicoes">Ver chaveamento e resultados</a></div>').join('');
+  cal.querySelector('.v10-calendar-results')?.remove();
   cal.insertAdjacentHTML('beforeend','<section class="v10-calendar-results"><h3>Edições com resultados registrados</h3>'+(list||'<p class="hint">Os chaveamentos publicados aparecerão aqui.</p>')+'</section>');
  }
  const page=el('#pgAnnual');if(page){page.hidden=window._pg!=='anual';if(!page.hidden)page.innerHTML=annual();}
@@ -153,7 +154,7 @@ const baseForm10=form;
 form=function(id){
  baseForm10(id);
  // Um MC novo começa sem títulos. Não colocá-lo automaticamente no ranking histórico.
- if(!id){const titleRows=el('#fR');const inputs=titleRows?.querySelectorAll('input');if(inputs?.length>1)inputs[1].value='0';}
+ if(!id){const titleRows=el('#fR');const first=titleRows?.querySelector('.row');const inputs=first?.querySelectorAll('input');if(inputs?.length>1)inputs[1].value='0';}
  const panel=el('#modal .sheet');if(!panel)return;
  panel.classList.add('v10-form-modal');
  panel.insertAdjacentHTML('afterbegin','<div class="v10-toolbar"><button class="btn" data-v10-jump="fN">Informações</button><button class="btn" data-v10-jump="fRp">Estado</button><button class="btn" data-v10-jump="fP">Foto</button><button class="btn" data-v10-jump="fR">Títulos</button>'+(id?'<button class="btn" data-v10-open-panel="v10-tags" data-v10-mcid="'+h(id)+'">Tags</button><button class="btn" data-v10-open-panel="v10-videos" data-v10-mcid="'+h(id)+'">Vídeos</button>':'')+'</div>');
@@ -161,7 +162,7 @@ form=function(id){
 // Preserve os painéis completos da V9 (inclusive aparência, importação/exportação,
 // música, calendários, níveis e layout). Os recursos novos são abas adicionais.
 const legacyTabs=[['vis','Visão geral'],['mcs','MCs e títulos'],['niv','Níveis'],['ap','Aparência e fontes'],['lay','Layout do ranking'],['mus','Música'],['cal','Calendário'],['mem','Galeria'],['site','Configurações do site'],['log','Histórico'],['dad','Dados, importar/exportar'],['campeoes','Campeões 2026'],['chaves','Chaveamentos']];
-const moreTabs=[['v10-cadastro','Todos os MCs'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-duelos','Confrontos diretos'],['v10-anual','Ranking anual']];
+const moreTabs=[['v10-cadastro','Todos os MCs'],['v10-sem-titulos','MCs sem títulos'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-duelos','Confrontos diretos'],['v10-anual','Ranking anual']];
 
 function tabs(){
  const p=el('#adm .atabs');if(!p)return;
@@ -187,8 +188,30 @@ function videoList(id){
 admRender=function(){
  if(!canAdmin)return;
  const y=year(),s=season(y);
- if(admTab==='v10-cadastro'){
-  sheet('Cadastro geral de MCs','<p class="hint">Cadastre participantes com ou sem títulos. Todos terão perfil e poderão participar do Ranking Anual.</p><button class="btn on" data-v10-form="">+ Novo MC</button><div class="v10-mc-list">'+data.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(m=>'<div class="v10-mc-row">'+avatars(m)+'<span><strong>'+h(m.name)+'</strong><small>'+total(m)+' título(s) · '+h(m.city||'Sem estado')+'</small></span><button class="btn" data-v10-form="'+h(m.id)+'">Editar</button></div>').join('')+'</div>');
+ if(['mcs','v10-cadastro','v10-sem-titulos'].includes(admTab)){
+  const kind=admTab,onlyUnranked=kind==='v10-sem-titulos',onlyRanked=kind==='mcs';
+  const members=data.filter(m=>onlyUnranked?total(m)===0:onlyRanked?total(m)>0:true)
+    .slice().sort((a,b)=>onlyUnranked?a.name.localeCompare(b.name,'pt-BR'):
+      total(b)-total(a)||a.name.localeCompare(b.name,'pt-BR'));
+  const tags='<div class="v10-roster-tabs"><button class="btn '+(kind==='mcs'?'on':'')+'" data-at="mcs">Com títulos ('+data.filter(m=>total(m)>0).length+')</button>'+
+    '<button class="btn '+(kind==='v10-sem-titulos'?'on':'')+'" data-at="v10-sem-titulos">Sem títulos ('+data.filter(m=>total(m)===0).length+')</button>'+
+    '<button class="btn '+(kind==='v10-cadastro'?'on':'')+'" data-at="v10-cadastro">Todos ('+data.length+')</button></div>';
+  const rows=members.map(m=>{
+    const t=total(m),src=m._tmp||m.photo||'';
+    return '<article class="v10-admin-mc-card" data-v10-roster-mc="'+h(m.id)+'">'+
+      '<div class="v10-admin-mc-face">'+(src?'<img src="'+h(src)+'" loading="lazy" alt="Foto de '+h(m.name)+'">':'<span class="v10-admin-mc-initial">'+h(m.name?.slice(0,1)||'?')+'</span>')+'</div>'+
+      '<div class="v10-admin-mc-meta"><strong title="'+h(m.name)+'">'+h(m.name)+'</strong><small>'+h(m.city||'Local não informado')+'</small><b class="v10-admin-mc-counter">'+t+' '+(t===1?'título':'títulos')+'</b></div>'+
+      '<div class="v10-admin-mc-actions"><button class="btn" data-edit="'+h(m.id)+'" aria-label="Editar '+h(m.name)+'">Editar</button>'+
+        '<button class="btn" data-q="'+h(m.id)+'" aria-label="Somar um título para '+h(m.name)+'">+1</button>'+
+        '<button class="btn" data-qm="'+h(m.id)+'" aria-label="Retirar um título de '+h(m.name)+'" '+(!t?'disabled':'')+'>−1</button>'+
+      '</div></article>';
+  }).join('');
+  const bulk=kind==='mcs'?'<details class="v10-roster-bulk"><summary>Cadastro em lote</summary><p class="hint">Uma linha por MC: Nome; Cidade; 2023:3, 2024:2</p><textarea id="bulk" class="w" rows="5"></textarea><div class="act"><button class="btn on" data-bulk>Adicionar MCs</button></div></details>':'';
+  sheet(onlyUnranked?'MCs cadastrados sem títulos':onlyRanked?'MCs com títulos':'Cadastro geral de MCs',
+    '<p class="hint">Gerencie cada MC pelo card. Participantes sem títulos continuam cadastrados e podem entrar em chaveamentos e confrontos; só aparecem no ranking histórico após conquistar o primeiro título.</p>'+
+    '<div class="v10-roster-tools"><button class="btn on" id="addBtn">+ Cadastrar MC</button><label>Ano da alteração rápida <input id="qy" type="number" min="2000" max="2100" value="'+(window._qy||new Date().getFullYear())+'"></label></div>'+
+    tags+bulk+'<div class="v10-admin-roster-grid">'+
+    (rows||'<p class="v10-empty">Nenhum MC nesta categoria.</p>')+'</div>');
  }else if(admTab==='v10-tags'){
   sheet('Tags dos participantes','<p class="hint">Organize categorias e características por MC. Separe as tags por vírgula.</p><label>MC<select id="v10TagMC">'+options(window._v10MC||data[0]?.id)+'</select></label><label>Tags<input id="v10Tags" maxlength="800" placeholder="Revelação, Representante, Campeão..."></label><button class="btn on" data-v10-save-tags>Salvar no rascunho</button>');
  }else if(admTab==='v10-estados'){
@@ -229,7 +252,7 @@ function fillRep(){const m=mc(el('#v10RepMC')?.value);if(el('#v10RepType'))el('#
 function bracketEdit(id){
  if(!canAdmin)return loginForm();
  let b=BRACKETS.find(x=>x.id===id);
- if(!b){b={id:'br-'+Date.now(),title:'Nova edição',date:new Date().toISOString().slice(0,10),players:Array(8).fill(''),results:{},triples:{},layout:'columns',countAnnual:true,status:'draft'};BRACKETS.push(b);}
+ if(!b){b={id:'br-'+Date.now(),title:'Nova edição',date:new Date().toISOString().slice(0,10),players:Array(8).fill(''),results:{},triples:{},layout:'mirror',countAnnual:true,status:'draft'};BRACKETS.push(b);}
  window._v6Editing=b.id;
  const rounds=core.bracketRounds(b),names=data.map(m=>'<option value="'+h(m.name)+'"></option>').join('');
  const matches=rounds.map((ms,r)=>'<h3>'+['Primeira fase','Segunda fase','Semifinal','Final'][r]+'</h3>'+ms.map(m=>{
