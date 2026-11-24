@@ -221,10 +221,11 @@ async function saveAndPublish(btn){
  finally{btn.disabled=false;btn.textContent='Salvar e Publicar';}
 }
 async function clickAction(e){
- const btn=e.target.closest('[data-v10-show-third],[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
+ const btn=e.target.closest('[data-v10-mobile-login],[data-v10-show-third],[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
  if(!btn)return;
  e.stopImmediatePropagation();e.preventDefault();
  const d=btn.dataset;
+ if(d.v10MobileLogin!==undefined){el('#nv')?.classList.remove('open');el('#mbtn')?.setAttribute('aria-expanded','false');toggleAdminPanel();return;}
  if(d.v10ShowThird){const input=el('[data-v10-third="'+d.v10ShowThird+'"]');const wrapper=el('[data-v10-third-wrap="'+d.v10ShowThird+'"]');if(wrapper)wrapper.hidden=false;btn.hidden=true;input?.focus();return;}
  if(d.v10Jump){const target=el('#'+d.v10Jump);target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus();return;}
  if(d.v10OpenPanel){window._v10MC=d.v10Mcid;admTab=d.v10OpenPanel;close();admRender();return;}
@@ -262,12 +263,13 @@ document.addEventListener('change',e=>{
  else if(t.id==='v10VidMC')videoList(t.value);
  else if(t.id==='v10FeaturedMC')fillFeatured();
 },true);
-// Não cria um atalho alternativo no celular. O atalho Ctrl+Shift+A segue exigindo Firebase.
+// Acesso administrativo mobile por botão no menu; a autenticação Firebase e a autorização no servidor continuam obrigatórias.
 const logo=el('#hLogo');
 if(logo){const clean=logo.cloneNode(true);logo.replaceWith(clean);clean.removeAttribute('tabindex');clean.removeAttribute('role');clean.setAttribute('aria-label','Batalha da Foice');}
 const nav=el('#nv');if(nav){
  const login=nav.querySelector('a[href="#admin"]');if(login)login.remove();
  if(!nav.querySelector('#v10-nav'))nav.insertAdjacentHTML('beforeend','<a id="v10-nav" href="#/anual">Ranking anual</a>');
+ if(!nav.querySelector('#v10-mobile-admin'))nav.insertAdjacentHTML('beforeend','<button type="button" id="v10-mobile-admin" data-v10-mobile-login aria-label="Abrir login administrativo">⚙ Área administrativa</button>');
 }
 const page=document.createElement('div');page.id='pgAnnual';page.hidden=true;el('#pgAbout').after(page);
 if(Array.isArray(data)&&data.length)render();
