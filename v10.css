@@ -143,3 +143,24 @@
  #adm .asheet{width:100vw;max-width:100vw}
  #adm .atabs{max-height:150px}
 }
+
+/* Chave conectada vertical — vencedores avançam de baixo para cima, até a final. */
+.v10-tree{position:relative;display:flex;flex-direction:column-reverse;gap:64px;min-width:100%;width:max-content;padding:12px 4px 16px}
+.v10-tree-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:0}
+.v10-tree-wires path{fill:none;stroke:#d4a563;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;opacity:.87}
+.v10-tree-round{position:relative;z-index:1;min-width:100%;width:max-content;display:flex;flex-direction:column;gap:12px}
+.v10-tree-round h4{font:400 16px Anton,Arial,sans-serif;text-align:center;color:#f2b570;margin:0 0 7px}
+.v10-tree-games{display:grid;grid-template-columns:repeat(var(--v10-leaves),minmax(166px,1fr));align-items:center;column-gap:4px;min-width:100%}
+.v10-tree-match{justify-self:center;align-self:center;width:min(174px,calc(100% - 8px));position:relative}
+.v10-tree-match .v10-br-match{width:100%;min-width:0;background:#171515;border:1px solid #b88749}
+.v10-tree .v10-br-match::before,.v10-tree .v10-br-match::after{content:none!important}
+.v10-career{margin:18px 0;padding:12px;border:1px solid #b78a4b55;border-radius:12px}
+.v10-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(80px,1fr));gap:8px}
+.v10-stat-grid>div{display:flex;flex-direction:column;text-align:center;align-items:center;gap:5px;background:#241d19;border-radius:8px;padding:11px 6px}
+.v10-stat-grid strong{font-size:22px;color:#f4ba79}
+.v10-stat-grid small{font-size:11px;color:#ddd}
+.v10-calendar-results{margin:24px 0;padding:16px;border:1px solid #b78a4b55;border-radius:12px}
+.v10-cal-edition{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:11px 4px;border-bottom:1px solid #ffffff1d}
+.v10-cal-edition a{color:#e5ad65}
+.v10-fighter small{color:#efc28c;font-size:12px}
+@media(max-width:670px){.v10-tree{gap:48px}.v10-tree-games{grid-template-columns:repeat(var(--v10-leaves),minmax(145px,1fr))}.v10-tree-match{width:min(154px,calc(100% - 6px))}.v10-stat-grid{grid-template-columns:repeat(2,minmax(80px,1fr))}}
