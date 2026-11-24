@@ -466,6 +466,11 @@ async function recoverBrackets(source){
  });
  if(!missing.length&&!changed.length)return toast('Os chaveamentos deste rascunho já estão no painel.');
  if(!confirm('Encontrados '+missing.length+' chaveamento(s) ausente(s) e '+changed.length+' versão(ões) diferente(s). Recuperar como RASCUNHO, mantendo todos os registros atuais?'))return;
+ // Antes de alterar o rascunho local, mantenha cópia integral recuperável.
+ try{
+  const oldLocal=localStorage.getItem('foice_draft');
+  if(oldLocal)localStorage.setItem('foice_recovery_backup_'+Date.now(),oldLocal);
+ }catch(err){return toast('Sem espaço para preservar uma cópia do rascunho atual. Exporte um backup antes de recuperar.',1);}
  const known=[...data],recovered=[],newMembers=[],now=Date.now();
  let skipped=0;
  for(const [i,original] of [...missing,...changed].entries()){
