@@ -145,7 +145,7 @@ form=function(id){
 // Preserve os painéis completos da V9 (inclusive aparência, importação/exportação,
 // música, calendários, níveis e layout). Os recursos novos são abas adicionais.
 const legacyTabs=[['vis','Visão geral'],['mcs','MCs e títulos'],['niv','Níveis'],['ap','Aparência e fontes'],['lay','Layout do ranking'],['mus','Música'],['cal','Calendário'],['mem','Galeria'],['site','Configurações do site'],['log','Histórico'],['dad','Dados, importar/exportar'],['campeoes','Campeões 2026'],['chaves','Chaveamentos']];
-const moreTabs=[['v10-cadastro','Todos os MCs'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-anual','Ranking anual']];
+const moreTabs=[['v10-cadastro','Todos os MCs'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-duelos','Confrontos diretos'],['v10-anual','Ranking anual']];
 
 function tabs(){
  const p=el('#adm .atabs');if(!p)return;
@@ -181,6 +181,21 @@ admRender=function(){
   sheet('Vídeos dos MCs','<p class="hint">Cole um link do YouTube ou envie um arquivo MP4/WebM. Para upload, configure o bucket BDF_R2 no Cloudflare.</p><label>MC<select id="v10VidMC">'+options(window._v10MC||data[0]?.id)+'</select></label><label>Título<input id="v10VidTitle" maxlength="140" placeholder="Melhor rima"></label><label>URL do YouTube<input id="v10VidUrl" placeholder="https://youtu.be/..."></label><button class="btn on" data-v10-add-youtube>Adicionar YouTube</button><h3>Enviar vídeo</h3><input id="v10VidFile" type="file" accept="video/mp4,video/webm"><button class="btn" data-v10-upload>Fazer upload</button><progress id="v10Progress" max="100" value="0" hidden></progress><p id="v10UploadStatus" class="hint"></p><div id="v10VidList"></div>');
  }else if(admTab==='v10-destaques'){
   sheet('Destaques da semana','<p class="hint">Escolha o MC e a rima em destaque na página inicial. O último campeão e a última edição vêm dos chaveamentos publicados.</p><label>MC em destaque<select id="v10FeaturedMC">'+options(v10().featuredMC||data[0]?.id)+'</select></label><label>Vídeo<select id="v10FeaturedVideo"></select></label><button class="btn on" data-v10-featured>Salvar destaque</button>');
+ }else if(admTab==='v10-duelos'){
+  const edit=manualDuels().find(d=>d.id===window._v10EditDuel),rows=manualDuels().slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const name=id=>h(mc(id)?.name||'MC excluído');
+  sheet('Confrontos diretos · resultados antigos',
+   '<p class="hint">Cadastre somente confrontos antigos que não existam em um chaveamento publicado. Cada registro soma uma vitória e uma partida aos perfis e ao confronto direto, mas não altera o ranking anual nem os títulos.</p>'+
+   '<div class="v10-admin-grid"><label>Primeiro MC<select id="v10DuelA">'+options(edit?.aId||data[0]?.id)+'</select></label>'+
+   '<label>Segundo MC<select id="v10DuelB">'+options(edit?.bId||data[1]?.id)+'</select></label>'+
+   '<label>Vencedor<select id="v10DuelWinner">'+options(edit?.winnerId||data[0]?.id)+'</select></label>'+
+   '<label>Placar<select id="v10DuelScore">'+['2×0','2×1','W.O.','Outro'].map(x=>'<option value="'+x+'" '+(edit?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'+
+   '<label>Nome da batalha<input id="v10DuelEdition" maxlength="150" placeholder="Edição ou evento histórico" value="'+h(edit?.edition||'')+'"></label>'+
+   '<label>Data (opcional)<input id="v10DuelDate" type="date" value="'+h(edit?.date||'')+'"></label></div>'+
+   '<button class="btn on" data-v10-save-duel>'+(edit?'Atualizar resultado':'Adicionar resultado')+'</button> '+
+   (edit?'<button class="btn" data-v10-cancel-duel>Cancelar edição</button>':'')+
+   '<h3>Histórico manual ('+rows.length+')</h3><div class="v10-mc-list">'+
+   (rows.map(d=>'<div class="v10-mc-row"><span><strong>'+name(d.aId)+' × '+name(d.bId)+'</strong><small>'+h(d.edition)+' · '+h(d.date||'Data não informada')+' · '+name(d.winnerId)+' venceu '+h(d.score)+'</small></span><button class="btn" data-v10-edit-duel="'+h(d.id)+'">Editar</button><button class="btn" data-v10-remove-duel="'+h(d.id)+'">Excluir</button></div>').join('')||'<p class="v10-empty">Nenhum confronto antigo cadastrado.</p>')+'</div>');
  }else if(admTab==='v10-anual'){
   sheet('Ranking anual · TOP 16','<p class="hint">O ranking começa vazio. Quando você publicar uma nova edição com a opção Contar no Ranking Anual, seus MCs entram automaticamente na tabela. Edições antigas não são incluídas sem sua autorização. O bônus 2 × 0 é acumulado em confrontos tradicionais.</p><label>Ano<input id="v10AdminYear" type="number" min="2000" max="2100" value="'+y+'"></label><div class="v10-admin-grid">'+Object.entries({segunda:'Segunda fase',semi:'Semifinal',final:'Vice',campeao:'Campeão',bonus:'Bônus por 2 × 0'}).map(([key,label])=>'<label>'+label+'<input type="number" data-v10-rule="'+key+'" min="0" max="1000" value="'+Number(s.rules[key]??core.defaults[key])+'"></label>').join('')+'</div><button class="btn on" data-v10-save-rules>Salvar regras</button><h3>Classificação automática</h3><p class="hint">Os 16 melhores pontuadores aparecem aqui automaticamente. Sem edições novas marcadas para a temporada, ninguém aparecerá.</p><div class="v10-mc-list">'+(standings().map((row,i)=>'<div class="v10-mc-row">'+avatars(mc(row.id))+'<span><strong>'+(i+1)+'º · '+h(mc(row.id)?.name||'MC')+'</strong><small>'+row.points+' pontos · '+row.wins+' vitórias</small></span></div>').join('')||'<div class="v10-empty">Temporada vazia. Publique o primeiro chaveamento da temporada.</div>')+'</div><h3>Ajustar pontos manualmente</h3><label>MC<select id="v10AdjustMC">'+options(data[0]?.id)+'</select></label><label>Pontos (negativo para desconto)<input id="v10AdjustPts" type="number" step="1" value="1"></label><label>Motivo<input id="v10AdjustReason" maxlength="200" placeholder="Correção de resultado"></label><button class="btn on" data-v10-adjust>Registrar ajuste</button><h3>Histórico de ajustes</h3>'+history(y));
  }else originalAdm();
@@ -291,7 +306,7 @@ async function saveAndPublish(btn){
  finally{btn.disabled=false;btn.textContent='Salvar e Publicar';}
 }
 async function clickAction(e){
- const btn=e.target.closest('[data-v10-mobile-login],[data-v10-show-third],[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
+ const btn=e.target.closest('[data-v10-mobile-login],[data-v10-show-third],[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-save-duel],[data-v10-edit-duel],[data-v10-remove-duel],[data-v10-cancel-duel],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
  if(!btn)return;
  e.stopImmediatePropagation();e.preventDefault();
  const d=btn.dataset;
@@ -315,6 +330,18 @@ async function clickAction(e){
  if(d.v10EditVideo!==undefined)return videoChange({index:Number(d.v10EditVideo),type:'edit'});
  if(d.v10DeleteVideo!==undefined)return videoChange({index:Number(d.v10DeleteVideo),type:'delete'});
  if(d.v10Upload!==undefined)return upload();
+ if(d.v10SaveDuel!==undefined){
+  const aId=el('#v10DuelA')?.value,bId=el('#v10DuelB')?.value,winnerId=el('#v10DuelWinner')?.value,
+        edition=el('#v10DuelEdition')?.value.trim(),score=el('#v10DuelScore')?.value,date=el('#v10DuelDate')?.value||'';
+  if(!aId||!bId||aId===bId||![aId,bId].includes(winnerId)||!edition||edition.length>150)return toast('Informe dois MCs diferentes, vencedor e nome da batalha.',1);
+  const original=manualDuels().find(d=>d.id===window._v10EditDuel);
+  const record={id:original?.id||'duel-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),aId,bId,winnerId,edition,score,date};
+  if(original)Object.assign(original,record);else manualDuels().push(record);
+  window._v10EditDuel=null;save();render();admRender();toast('Confronto salvo no rascunho.');return;
+ }
+ if(d.v10EditDuel!==undefined){window._v10EditDuel=d.v10EditDuel;admRender();return;}
+ if(d.v10CancelDuel!==undefined){window._v10EditDuel=null;admRender();return;}
+ if(d.v10RemoveDuel!==undefined){if(!confirm('Excluir este confronto do histórico manual?'))return;v10().manualDuels=manualDuels().filter(x=>x.id!==d.v10RemoveDuel);window._v10EditDuel=null;save();render();admRender();return;}
  if(d.v10SaveRules!==undefined){const r={};for(const x of els('[data-v10-rule]')){const n=Number(x.value);if(!Number.isInteger(n)||n<0||n>1000)return toast('Informe pontos entre 0 e 1.000.',1);r[x.dataset.v10Rule]=n;}staging(()=>season(year()).rules=r);toast('Regras salvas no rascunho.');return;}
  // A classificação anual não exige seleção manual de participantes.
  if(d.v10Adjust!==undefined){const id=el('#v10AdjustMC').value,delta=Number(el('#v10AdjustPts').value),reason=el('#v10AdjustReason').value.trim();if(!Number.isInteger(delta)||!delta||Math.abs(delta)>10000||!reason)return toast('Informe pontuação inteira e motivo.',1);staging(()=>{const s=season(year());(s.adjustments[id]||=[]).push({delta,reason,at:new Date().toISOString()});});toast('Ajuste registrado.');return;}
