@@ -33,7 +33,7 @@ function annual(){
 function highlights(){
  const b=published()[0],w=b&&core.bracketRounds(b).at(-1)?.[0]?.result?.winner;
  const fm=mc(v10().featuredMC)||data.find(m=>(m.videos||[]).some(core.validVideo));
- const fv=fm&&(fm.videos||[]).find(core.validVideo);
+ const fv=fm&&((fm.videos||[]).find(v=>v.url===v10().featuredVideoUrl&&core.validVideo(v))||(fm.videos||[]).find(core.validVideo));
  return '<section class="v10-section"><div class="v10-eyebrow">Destaques da roda</div><h2>Destaques da semana</h2><div class="v10-highlight"><div><small>Último campeão</small><strong>'+h(w||'Ainda não informado')+'</strong></div><div><small>Batalha mais recente</small><strong>'+h(b?.title||'Aguardando cadastro')+'</strong></div><div><small>Rima em destaque</small><strong>'+h(fv?.title||'Aguardando seleção')+'</strong>'+(fm&&fv?'<button class="btn" data-v10-profile="'+h(fm.id)+'">Ver vídeo</button>':'')+'</div></div></section>';
 }
 function decorate(){
@@ -69,7 +69,14 @@ profile=function(id){
  sheet.insertAdjacentHTML('beforeend','<div class="v10-profile"><h3>Perfil do MC</h3><div class="v10-tags">'+(m.tags||[]).map(tag=>'<span class="v10-tag">'+h(tag)+'</span>').join('')+'</div>'+(photos.length?'<h3>Galeria de fotos</h3><div class="v10-photos">'+photos.map(url=>'<img loading="lazy" src="'+h(url)+'" alt="Foto de '+h(m.name)+'">').join('')+'</div>':'')+(vids.length?'<h3>Vídeos de rimas</h3><div class="v10-videos">'+vids.map(v=>{const youtube=core.youtubeId(v.url);return '<div class="v10-video">'+(youtube?'<button class="v10-play" data-v10-play="'+youtube+'" aria-label="Reproduzir"><img loading="lazy" src="https://img.youtube.com/vi/'+youtube+'/hqdefault.jpg" alt=""><span>▶</span></button>':'<video src="'+h(v.url)+'" controls playsinline preload="none"></video>')+'<b>'+h(v.title)+'</b></div>';}).join('')+'</div>':'')+'</div>');
 };
 const originalAdm=admRender;
-const moreTabs=[['mcs','MCs e perfis'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-anual','Ranking anual']];
+const baseForm10=form;
+form=function(id){
+ baseForm10(id);
+ const panel=el('#modal .sheet');if(!panel)return;
+ panel.classList.add('v10-form-modal');
+ panel.insertAdjacentHTML('afterbegin','<div class="v10-toolbar"><button class="btn" data-v10-jump="fN">Informações</button><button class="btn" data-v10-jump="fRp">Estado</button><button class="btn" data-v10-jump="fP">Foto</button><button class="btn" data-v10-jump="fR">Títulos</button>'+(id?'<button class="btn" data-v10-open-panel="v10-tags" data-v10-mcid="'+h(id)+'">Tags</button><button class="btn" data-v10-open-panel="v10-videos" data-v10-mcid="'+h(id)+'">Vídeos</button>':'')+'</div>');
+};
+const moreTabs=[['mcs','MCs e perfis'],['v10-tags','Tags'],['v10-estados','Estados'],['v10-videos','Vídeos'],['v10-destaques','Destaques'],['v10-anual','Ranking anual']];
 function tabs(){
  const p=el('#adm .atabs');if(!p)return;
  for(const [id,label] of moreTabs){
@@ -83,6 +90,10 @@ function history(y){
  const a=season(y).adjustments||{};
  return Object.entries(a).flatMap(([id,entries])=>entries.map(x=>'<p class="hint">'+h(mc(id)?.name||id)+' · '+(x.delta>0?'+':'')+x.delta+' pts · '+h(x.reason)+'</p>')).join('');
 }
+function fillFeatured(){
+ const m=mc(el('#v10FeaturedMC')?.value),select=el('#v10FeaturedVideo');if(!select)return;
+ select.innerHTML=(m?.videos||[]).filter(core.validVideo).map(v=>'<option value="'+h(v.url)+'" '+(v.url===v10().featuredVideoUrl?'selected':'')+'>'+h(v.title)+'</option>').join('')||'<option value="">Nenhum vídeo</option>';
+}
 function videoList(id){
  const m=mc(id),box=el('#v10VidList');if(!box)return;
  box.innerHTML='<h3>Vídeos deste MC</h3>'+((m?.videos||[]).map((v,i)=>'<div class="v10-mc-row"><span><strong>'+h(v.title)+'</strong><small>'+h(v.kind==='youtube'?'YouTube':'Enviado ao site')+'</small></span><button class="btn" data-v10-edit-video="'+i+'">Renomear</button><button class="btn" data-v10-delete-video="'+i+'">Excluir</button></div>').join('')||'<p class="hint">Nenhum vídeo cadastrado.</p>');
@@ -93,11 +104,13 @@ admRender=function(){
  if(admTab==='mcs'){
   sheet('Cadastro geral de MCs','<p class="hint">Cadastre participantes com ou sem títulos. Todos terão perfil e poderão participar do Ranking Anual.</p><button class="btn on" data-v10-form="">+ Novo MC</button><div class="v10-mc-list">'+data.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(m=>'<div class="v10-mc-row">'+avatars(m)+'<span><strong>'+h(m.name)+'</strong><small>'+total(m)+' título(s) · '+h(m.city||'Sem estado')+'</small></span><button class="btn" data-v10-form="'+h(m.id)+'">Editar</button></div>').join('')+'</div>');
  }else if(admTab==='v10-tags'){
-  sheet('Tags dos participantes','<p class="hint">Organize categorias e características por MC. Separe as tags por vírgula.</p><label>MC<select id="v10TagMC">'+options(data[0]?.id)+'</select></label><label>Tags<input id="v10Tags" maxlength="800" placeholder="Revelação, Representante, Campeão..."></label><button class="btn on" data-v10-save-tags>Salvar no rascunho</button>');
+  sheet('Tags dos participantes','<p class="hint">Organize categorias e características por MC. Separe as tags por vírgula.</p><label>MC<select id="v10TagMC">'+options(window._v10MC||data[0]?.id)+'</select></label><label>Tags<input id="v10Tags" maxlength="800" placeholder="Revelação, Representante, Campeão..."></label><button class="btn on" data-v10-save-tags>Salvar no rascunho</button>');
  }else if(admTab==='v10-estados'){
-  sheet('Representantes estaduais','<p class="hint">Vincule os participantes a estados ou regiões, mesmo que ainda não tenham títulos.</p><label>MC<select id="v10RepMC">'+options(data[0]?.id)+'</select></label><label>Representação<select id="v10RepType"><option value="">Nenhuma</option><option value="estadual">Estadual</option><option value="regional">Regional</option></select></label><label>Estado / região<input id="v10RepLoc" maxlength="40" placeholder="Rio de Janeiro"></label><button class="btn on" data-v10-save-rep>Salvar representante</button>');
+  sheet('Representantes estaduais','<p class="hint">Vincule os participantes a estados ou regiões, mesmo que ainda não tenham títulos.</p><label>MC<select id="v10RepMC">'+options(window._v10MC||data[0]?.id)+'</select></label><label>Representação<select id="v10RepType"><option value="">Nenhuma</option><option value="estadual">Estadual</option><option value="regional">Regional</option></select></label><label>Estado / região<input id="v10RepLoc" maxlength="40" placeholder="Rio de Janeiro"></label><button class="btn on" data-v10-save-rep>Salvar representante</button>');
  }else if(admTab==='v10-videos'){
-  sheet('Vídeos dos MCs','<p class="hint">Cole um link do YouTube ou envie um arquivo MP4/WebM. Para upload, configure o bucket BDF_R2 no Cloudflare.</p><label>MC<select id="v10VidMC">'+options(data[0]?.id)+'</select></label><label>Título<input id="v10VidTitle" maxlength="140" placeholder="Melhor rima"></label><label>URL do YouTube<input id="v10VidUrl" placeholder="https://youtu.be/..."></label><button class="btn on" data-v10-add-youtube>Adicionar YouTube</button><h3>Enviar vídeo</h3><input id="v10VidFile" type="file" accept="video/mp4,video/webm"><button class="btn" data-v10-upload>Fazer upload</button><progress id="v10Progress" max="100" value="0" hidden></progress><p id="v10UploadStatus" class="hint"></p><div id="v10VidList"></div>');
+  sheet('Vídeos dos MCs','<p class="hint">Cole um link do YouTube ou envie um arquivo MP4/WebM. Para upload, configure o bucket BDF_R2 no Cloudflare.</p><label>MC<select id="v10VidMC">'+options(window._v10MC||data[0]?.id)+'</select></label><label>Título<input id="v10VidTitle" maxlength="140" placeholder="Melhor rima"></label><label>URL do YouTube<input id="v10VidUrl" placeholder="https://youtu.be/..."></label><button class="btn on" data-v10-add-youtube>Adicionar YouTube</button><h3>Enviar vídeo</h3><input id="v10VidFile" type="file" accept="video/mp4,video/webm"><button class="btn" data-v10-upload>Fazer upload</button><progress id="v10Progress" max="100" value="0" hidden></progress><p id="v10UploadStatus" class="hint"></p><div id="v10VidList"></div>');
+ }else if(admTab==='v10-destaques'){
+  sheet('Destaques da semana','<p class="hint">Escolha o MC e a rima em destaque na página inicial. O último campeão e a última edição vêm dos chaveamentos publicados.</p><label>MC em destaque<select id="v10FeaturedMC">'+options(v10().featuredMC||data[0]?.id)+'</select></label><label>Vídeo<select id="v10FeaturedVideo"></select></label><button class="btn on" data-v10-featured>Salvar destaque</button>');
  }else if(admTab==='v10-anual'){
   sheet('Ranking anual · TOP 16','<p class="hint">As fases somam apenas a maior pontuação alcançada por edição. O bônus 2 × 0 é acumulado em confrontos tradicionais.</p><label>Ano<input id="v10AdminYear" type="number" min="2000" max="2100" value="'+y+'"></label><div class="v10-admin-grid">'+Object.entries({segunda:'Segunda fase',semi:'Semifinal',final:'Vice',campeao:'Campeão',bonus:'Bônus por 2 × 0'}).map(([key,label])=>'<label>'+label+'<input type="number" data-v10-rule="'+key+'" min="0" max="1000" value="'+Number(s.rules[key]??core.defaults[key])+'"></label>').join('')+'</div><button class="btn on" data-v10-save-rules>Salvar regras</button><h3>Participantes</h3><p class="hint">Escolha até 16 MCs cadastrados.</p><div class="v10-picks">'+data.map(m=>'<label><input type="checkbox" data-v10-member="'+h(m.id)+'" '+(s.participants.includes(m.id)?'checked':'')+'>'+h(m.name)+'</label>').join('')+'</div><button class="btn on" data-v10-save-members>Salvar participantes</button><h3>Ajustar pontos manualmente</h3><label>MC<select id="v10AdjustMC">'+options(data[0]?.id)+'</select></label><label>Pontos (negativo para desconto)<input id="v10AdjustPts" type="number" step="1" value="1"></label><label>Motivo<input id="v10AdjustReason" maxlength="200" placeholder="Correção de resultado"></label><button class="btn on" data-v10-adjust>Registrar ajuste</button><h3>Histórico de ajustes</h3>'+history(y));
  }else originalAdm();
@@ -108,6 +121,7 @@ admRender=function(){
  if(admTab==='v10-tags')fillTags();
  if(admTab==='v10-estados')fillRep();
  if(admTab==='v10-videos')videoList(el('#v10VidMC')?.value);
+ if(admTab==='v10-destaques')fillFeatured();
 };
 function fillTags(){const m=mc(el('#v10TagMC')?.value);if(el('#v10Tags'))el('#v10Tags').value=(m?.tags||[]).join(', ');}
 function fillRep(){const m=mc(el('#v10RepMC')?.value);if(el('#v10RepType'))el('#v10RepType').value=m?.rep||'';if(el('#v10RepLoc'))el('#v10RepLoc').value=m?.repLoc||'';}
@@ -207,10 +221,12 @@ async function saveAndPublish(btn){
  finally{btn.disabled=false;btn.textContent='Salvar e Publicar';}
 }
 async function clickAction(e){
- const btn=e.target.closest('[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
+ const btn=e.target.closest('[data-v10-jump],[data-v10-open-panel],[data-v10-featured],[data-v10-profile],[data-v10-play],[data-v10-form],[data-v10-save-tags],[data-v10-save-rep],[data-v10-add-youtube],[data-v10-edit-video],[data-v10-delete-video],[data-v10-upload],[data-v10-save-rules],[data-v10-save-members],[data-v10-adjust],[data-v10-publish],[data-v10-save-br],[data-v10-remove-br]');
  if(!btn)return;
  e.stopImmediatePropagation();e.preventDefault();
  const d=btn.dataset;
+ if(d.v10Jump){const target=el('#'+d.v10Jump);target?.scrollIntoView({behavior:'smooth',block:'center'});target?.focus();return;}
+ if(d.v10OpenPanel){window._v10MC=d.v10Mcid;admTab=d.v10OpenPanel;close();admRender();return;}
  if(d.v10Profile)return profile(d.v10Profile);
  if(d.v10Play){
   const iframe=document.createElement('iframe');iframe.src='https://www.youtube-nocookie.com/embed/'+d.v10Play;iframe.title='Rima no YouTube';iframe.allow='accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture';iframe.allowFullscreen=true;btn.replaceWith(iframe);return;
@@ -219,6 +235,7 @@ async function clickAction(e){
  if(d.v10Form!==undefined)return form(d.v10Form);
  if(d.v10SaveTags!==undefined){const m=mc(el('#v10TagMC')?.value);if(!m)return;m.tags=[...new Set(el('#v10Tags').value.split(',').map(x=>x.trim()).filter(Boolean))].slice(0,30).map(x=>x.slice(0,60));save();toast('Tags salvas no rascunho.');return;}
  if(d.v10SaveRep!==undefined){const m=mc(el('#v10RepMC')?.value);if(!m)return;m.rep=el('#v10RepType').value;m.repLoc=el('#v10RepLoc').value.trim().slice(0,40);save();toast('Representação salva no rascunho.');return;}
+ if(d.v10Featured!==undefined){const selected=el('#v10FeaturedMC')?.value,url=el('#v10FeaturedVideo')?.value||'';v10().featuredMC=selected;v10().featuredVideoUrl=url;save();toast('Destaque salvo no rascunho.');return;}
  if(d.v10AddYoutube!==undefined){
   const m=mc(el('#v10VidMC')?.value),url=el('#v10VidUrl')?.value||'',title=el('#v10VidTitle')?.value.trim();if(!m||!title||title.length>140||!core.youtubeId(url))return toast('Informe um título e um link válido do YouTube.',1);
   m.videos||=[];m.videos.push({kind:'youtube',url,title});save();videoList(m.id);toast('Vídeo incluído no rascunho.');return;
@@ -242,6 +259,7 @@ document.addEventListener('change',e=>{
  else if(t.id==='v10TagMC')fillTags();
  else if(t.id==='v10RepMC')fillRep();
  else if(t.id==='v10VidMC')videoList(t.value);
+ else if(t.id==='v10FeaturedMC')fillFeatured();
 },true);
 // Não cria um atalho alternativo no celular. O atalho Ctrl+Shift+A segue exigindo Firebase.
 const logo=el('#hLogo');
