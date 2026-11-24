@@ -278,3 +278,9 @@
 .v10-bracket-editor .v10-preview-board [data-v6-editbr]{display:none!important}
 .v10-bracket-editor .v10-preview-board .v10-br-scroll{overflow-x:auto;max-width:100%}
 @media(max-width:620px){.v10-bracket-editor .v10-preview-wrap{padding:12px}.v10-title-share{font-size:10px;padding:4px 6px}}
+
+/* Recuperação explícita e não destrutiva dos chaveamentos de teste. */
+.v10-recover-panel{margin:12px 0;padding:13px;border:1px dashed var(--line);border-radius:12px;background:var(--bg)}
+.v10-recover-panel strong{display:block;font-size:14px;color:var(--acc);margin-bottom:7px}
+.v10-recover-panel p{margin:0 0 10px}
+.v10-recover-panel .btn{margin:4px 7px 4px 0;white-space:normal}
