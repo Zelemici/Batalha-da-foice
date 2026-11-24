@@ -243,3 +243,22 @@
  .v10-bracket-editor>.v10-admin-grid,.v10-bracket-editor .v10-editor-matches{grid-template-columns:minmax(0,1fr)}
  .v10-bracket-editor .v10-match-edit{padding:14px}
 }
+
+/* V10: edição direta nos pequenos retângulos do chaveamento administrativo */
+.v10-bracket-editor .v10-inline-board{display:grid;gap:24px;margin:18px 0 30px}
+.v10-bracket-editor .v10-inline-round{min-width:0}
+.v10-bracket-editor .v10-inline-round>h3{font-size:17px;margin:0 0 12px}
+.v10-bracket-editor .v10-inline-games{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.v10-bracket-editor .v10-inline-match{min-width:0;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.v10-bracket-editor .v10-inline-match>strong{display:block;margin-bottom:10px;font-size:13px}
+.v10-bracket-editor .v10-inline-player{display:grid;grid-template-columns:minmax(0,1fr) 58px;align-items:center;gap:8px;margin:6px 0}
+.v10-bracket-editor .v10-inline-player input:not(.v10-inline-point),.v10-bracket-editor .v10-inline-name{box-sizing:border-box;width:100%;min-width:0;min-height:38px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg,#101010);color:inherit;font:inherit}
+.v10-bracket-editor .v10-inline-name{display:flex;align-items:center;opacity:.85}
+.v10-bracket-editor .v10-inline-player .v10-inline-point{width:58px;min-height:38px;margin:0;text-align:center;padding:6px;border-radius:8px}
+.v10-bracket-editor .v10-inline-player .v10-inline-point:disabled{opacity:.35}
+.v10-bracket-editor .v10-inline-third-btn{font-size:11px;padding:7px 10px;margin:7px 0}
+.v10-bracket-editor .v10-inline-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.v10-bracket-editor .v10-inline-controls label{font-size:11px;min-width:0}
+.v10-bracket-editor .v10-inline-controls select{width:100%;min-height:35px;margin-top:4px}
+.v10-bracket-editor .v10-inline-controls>.hint{align-self:center}
+@media(max-width:720px){.v10-bracket-editor .v10-inline-games{grid-template-columns:minmax(0,1fr)}}
