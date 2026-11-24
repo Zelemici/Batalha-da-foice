@@ -111,3 +111,42 @@ assert(ui.includes("onlyUnranked?total(m)===0:onlyRanked?total(m)>0:true"));
 assert(ui.includes("kind==='mcs'||kind==='v10-cadastro'"));
 assert(ui.includes("ranked=function(){return originalRanked().filter(m=>total(m)>0);}"));
 console.log('PASSOU: cadastro ADM mostra também os MCs sem títulos; ranking histórico continua separado.');
+
+
+// Percentual calculado no total do acervo, incluindo todos os MCs e títulos sem data.
+const shareMCs=[
+ {id:'v',name:'Vieira Zr',titles:{2023:81},unknownTitles:0},
+ {id:'b',name:'Outro',titles:{2023:19},unknownTitles:0},
+ {id:'c',name:'Novo',titles:{},unknownTitles:0}
+];
+assert.equal(core.titleShare(shareMCs[0],shareMCs),81);
+assert.equal(core.titleShare(shareMCs[1],shareMCs),19);
+assert.equal(core.titleShare(shareMCs[2],shareMCs),0);
+assert.equal(core.titleShare({titles:{},unknownTitles:0},[{titles:{},unknownTitles:0}]),0);
+shareMCs[1].unknownTitles=20;
+assert(Math.abs(core.titleShare(shareMCs[0],shareMCs)-67.5)<1e-8);
+assert.equal(core.titleCount({titles:{2022:3,2023:2},unknownTitles:4}),9);
+
+// Os três formatos usam uma prévia no próprio editor, sem publicar os dados.
+// A seleção de placar e vencedor não pode apagar a seleção incompleta.
+assert(ui.includes('id="v10BracketPreview"'));
+assert(ui.includes("box.innerHTML=v6BracketHtml({...bracketDraft,status:'draft'});"));
+assert(ui.includes("const controls='#v10BrSize,#v10BrLayout"));
+assert(ui.includes("if(winner&&(m.third||score)){"));
+assert(ui.includes("core.setBracketResult(b,k,{winner,score,points});"));
+assert(ui.includes("}else if(m.result){"));
+assert(ui.includes("refreshBracketPreview();"));
+assert(ui.includes("if(point.querySelector('.v10-card-record'))continue;"));
+assert(ui.includes("if(!point.querySelector('.v10-title-share'))"));
+console.log('PASSOU: percentual para todos os MCs, três prévias e fluxo de edição sem reset parcial.');
+
+
+// Recuperação não destrutiva: existe opção local/nuvem, exige confirmação
+// e sempre importa como rascunho, sem tocar no KV automaticamente.
+assert(ui.includes('data-v10-recover-br="local"'));
+assert(ui.includes('data-v10-recover-br="cloud"'));
+assert(ui.includes("async function recoverBrackets(source){"));
+assert(ui.includes("copy={...structuredClone(original),status:'draft'}"));
+assert(ui.includes("if(oldLocal)localStorage.setItem('foice_recovery_backup_'+Date.now(),oldLocal);"));
+assert(ui.includes("BRACKETS.push(...recovered);"));
+console.log('PASSOU: recuperação não destrutiva de chaveamentos a partir de rascunhos.');

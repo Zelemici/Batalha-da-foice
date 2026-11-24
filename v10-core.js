@@ -149,6 +149,15 @@
   }
   // Resultados avulsos usam IDs estáveis de MC, não dependem de chaves históricas.
   // O ADM deve registrar apenas confrontos que não constem de um chaveamento.
+  // Participação nos títulos registrados, distinta do win rate de batalhas.
+  // Considera todos os MCs cadastrados e também títulos sem data.
+  function titleCount(m){
+    return Object.values(m?.titles||{}).reduce((sum,n)=>sum+(Number(n)||0),0)+Math.max(0,Number(m?.unknownTitles)||0);
+  }
+  function titleShare(m,mcList=[]){
+    const registered=mcList.reduce((sum,member)=>sum+titleCount(member),0);
+    return registered>0?100*titleCount(m)/registered:0;
+  }
   function isTwoZero(score){return /^2\s*[×xX-]\s*0$/.test(String(score||'').trim());}
   function completedBattles(brackets=[],manualDuels=[],mcList=[]){
     const byName=new Map(mcList.map(m=>[m.name,m.id]));
@@ -266,5 +275,5 @@
     }else issues.push('Configuração anual inválida');
     return [...new Set(issues)];
   }
-  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,mcNameKey,canonicalMCName,prepareBracketRegistrations,annualTable,duelHistory,mcCareer,completedBattles,isTwoZero,youtubeId,validVideo,validateV10};
+  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,mcNameKey,canonicalMCName,prepareBracketRegistrations,annualTable,duelHistory,mcCareer,completedBattles,titleCount,titleShare,isTwoZero,youtubeId,validVideo,validateV10};
 })(globalThis);
