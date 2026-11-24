@@ -48,4 +48,26 @@ assert.deepEqual(core.annualTable({year:2026,mcList:mcs,brackets:[legacy],season
 assert.deepEqual(core.annualTable({year:2027,mcList:mcs,brackets:[bracket],season:doc.cfg.v10.seasons[2026]}),[],'Nova temporada começa vazia');
 const extra=structuredClone(bracket);extra.id='extra';extra.date='2026-11-24';extra.players=['A','B','C','D'];extra.triples={};extra.results={};
 assert.equal(core.annualTable({year:2026,mcList:mcs,brackets:[extra],season:{}}).length,4,'MCs entram automaticamente após registrar nova edição');
-console.log('PASSOU: V10 — Double Three, ranking anual, bônus, ajustes e confrontos.');
+// Resultados registrados manualmente funcionam mesmo sem chaveamento original.
+const manual=[{id:'hist-1',aId:A.id,bId:B.id,winnerId:A.id,score:'2×0',edition:'Edição antiga',date:'2023-05-20'}];
+assert.deepEqual(core.validateV10({data:mcs,brackets:[bracket],cfg:{v10:{manualDuels:manual,seasons:{}}}}),[]);
+const withManual=core.duelHistory(A,B,[bracket],manual,mcs);
+assert.equal(withManual.a,1);
+assert.equal(withManual.b,0);
+assert.equal(withManual.aRate,100);
+assert.equal(withManual.matches[0].source,'manual');
+const careerA=core.mcCareer(A,mcs,[bracket],manual);
+assert.equal(careerA.games,3,'MC A participou de dois confrontos da chave e um duelo manual');
+assert.equal(careerA.wins,3);
+assert.equal(careerA.winRate,100);
+assert.equal(careerA.twoZero,2,'Um 2×0 no chaveamento e um no duelo antigo');
+const careerC=core.mcCareer(C,mcs,[bracket],manual);
+assert.equal(careerC.games,2);
+assert.equal(careerC.wins,1);
+assert.equal(careerC.winRate,50);
+assert.equal(careerC.twoZero,1);
+const invalidDuel=structuredClone(manual);
+invalidDuel[0].winnerId=E.id;
+assert(core.validateV10({data:mcs,cfg:{v10:{manualDuels:invalidDuel,seasons:{}}}}).some(x=>/confronto manual/.test(x)));
+assert.deepEqual(core.annualTable({year:2026,mcList:mcs,brackets:[],season:{},manualDuels:manual}),[],'Resultados antigos não criam ranking anual');
+console.log('PASSOU: V10 — Double Three, ranking anual, bônus, duelos manuais e win rate.');
