@@ -14,7 +14,7 @@
 - MCs: listagem administrativa renovada, inclusive sem títulos, com abas próprias para tags, estados, vídeos, ranking anual e destaques. Formulário original mantido com navegação melhorada.
 - Perfis: fotos vinculadas à galeria e vários vídeos por MC. YouTube roda por incorporação após clique, sem autoplay; vídeos enviados usam a rota /api/video.
 - Salvamento: rascunho local, além do botão geral **Salvar e Publicar**, com autenticação Firebase, validação no servidor e confirmação da revisão publicada.
-- Login: botão "Entrar" removido do menu; atalho Ctrl + Shift + A abre o login no computador. O painel e a proteção de servidor da V9 são preservados; acesso pelo logo no celular foi retirado.
+- Login: botão "Entrar" removido do menu; atalho Ctrl + Shift + A abre o login no computador. No celular, o menu oferece **⚙ Área administrativa** para abrir o mesmo login Firebase. O painel e a proteção de servidor da V9 são preservados; acesso pelo logo foi retirado.
 
 ## Configuração para upload de vídeos (obrigatória)
 
@@ -33,7 +33,7 @@
 - functions/api/_lib.js valida esses campos no servidor, e v10-core.js concentra regras compartilhadas pelo navegador e servidor.
 - Login oculto não é mecanismo de segurança; Firebase e a autorização pela UID no servidor continuam obrigatórios.
 - O upload foi limitado a 25 MB e os arquivos são verificados por tipo e assinatura.
-- A versão para celular não recebe painel de administração. Layout e performance mobile ainda precisam de teste manual antes do merge.
+- A versão para celular pode abrir o login e o painel pelo menu, mas todas as ações administrativas continuam dependendo do Firebase e da autorização do servidor. Layout e performance mobile ainda precisam de teste manual antes do merge.
 
 ## Verificações e pendências
 
