@@ -56,9 +56,34 @@ bdfMatchHtml=function(match){
  if(!match.third)return oldMatch(match);
  return '<div class="bdf-game">'+match.participants.map((n,i)=>'<div class="bdf-player '+(match.result?.winner===n?'won':match.result?.winner?'lost':'')+'"><span>'+h(n)+'</span><span class="bdf-score">'+(match.result?.points?.[i]??'—')+(match.result?.winner===n?' ★':'')+'</span></div>').join('')+'</div>';
 };
+function v10MatchHtml(match){
+ const winner=match.result?.winner||'';
+ const people=match.third?[match.a,match.c,match.third]:[match.a,match.c];
+ return '<div class="v10-br-match">'+people.map((name,i)=>'<div class="v10-br-player '+(winner===name&&name?'v10-br-win':'')+'"><span>'+h(name||'A definir')+'</span><strong>'+(match.result?.points?.[i]??(winner===name?'★':''))+'</strong></div>').join('')+'<div class="v10-br-score">'+h(match.result?.score||'Placar pendente')+'</div></div>';
+}
 v6BracketHtml=function(b){
- const rounds=core.bracketRounds(b),label=b.players.length===4?['Semifinal','Final']:b.players.length===8?['Quartas','Semifinal','Final']:['Oitavas','Quartas','Semifinal','Final'],win=rounds.at(-1)?.[0]?.result?.winner;
- return '<article class="v6-bracket"><div class="v6-bracket-header"><div><h3>'+h(b.title)+'</h3><p class="hint">'+h(b.date||'Data pendente')+' · '+b.players.length+' vagas iniciais · '+(b.status==='published'?'Publicado':'Rascunho')+'</p></div>'+(canAdmin?'<button class="btn" data-v6-editbr="'+h(b.id)+'">Editar chave</button>':'')+'</div><div class="v6-rounds">'+rounds.map((matches,r)=>'<div class="v6-round"><h4>'+h(label[r])+'</h4>'+matches.map(match=>'<div class="v6-match">'+match.participants.map((n,i)=>'<div class="v10-match-part '+(match.result?.winner===n?'win':'')+'"><strong>'+h(n||'A definir')+'</strong><span>'+h(match.result?.points?.[i]??'')+(match.result?.winner===n?' ★':'')+'</span></div>').join('')+'<div class="v10-result">'+h(match.result?.score||'Resultado pendente')+'</div></div>').join('')+'</div>').join('')+'</div>'+(win?'<p class="v6-champion">🏆 Campeão: '+h(win)+'</p>':'')+'</article>';
+ const rounds=core.bracketRounds(b);
+ const labels=rounds.map((_,i)=>i===rounds.length-1?'Final':i===rounds.length-2?'Semifinal':i===0?'Primeira fase':'Segunda fase');
+ const win=rounds.at(-1)?.[0]?.result?.winner;
+ const layout=['columns','tree','mirror'].includes(b.layout)?b.layout:'columns';
+ const names={columns:'Clássico em fases',tree:'Árvore conectada',mirror:'Espelhado'};
+ let board='';
+ if(layout==='mirror'&&rounds.length>1){
+  const center=rounds.at(-1);
+  const sides=rounds.slice(0,-1);
+  const side=right=>{
+   const rs=right?sides.slice().reverse():sides;
+   return '<div class="v10-br-side '+(right?'v10-br-right':'v10-br-left')+'">'+rs.map((ms,ix)=>{
+    const orig=right?sides.length-ix-1:ix;
+    const half=ms.length/2,subset=ms.slice(right?half:0,right?ms.length:half);
+    return '<div class="v10-br-round"><h4>'+h(labels[orig])+'</h4>'+subset.map(v10MatchHtml).join('')+'</div>';
+   }).join('')+'</div>';
+  };
+  board='<div class="v10-br-mirror-board">'+side(false)+'<div class="v10-br-center"><h4>Final</h4>'+center.map(v10MatchHtml).join('')+'</div>'+side(true)+'</div>';
+ }else{
+  board='<div class="v10-br-rounds '+(layout==='tree'?'v10-br-tree':'v10-br-columns')+'">'+rounds.map((ms,i)=>'<div class="v10-br-round"><h4>'+h(labels[i])+'</h4><div class="v10-br-games">'+ms.map(v10MatchHtml).join('')+'</div></div>').join('')+'</div>';
+ }
+ return '<article class="v6-bracket v10-bracket v10-layout-'+layout+'"><div class="v6-bracket-header"><div><h3>'+h(b.title)+'</h3><p class="hint">'+h(b.date||'Data pendente')+' · '+b.players.length+' vagas · '+h(names[layout])+' · '+(b.status==='published'?'Publicado':'Rascunho')+'</p></div>'+(canAdmin?'<button class="btn" data-v6-editbr="'+h(b.id)+'">Editar chave</button>':'')+'</div><div class="v10-br-scroll" tabindex="0" aria-label="Chaveamento '+h(b.title)+'">'+board+'</div>'+(win?'<p class="v6-champion">🏆 Campeão: '+h(win)+'</p>':'')+'</article>';
 };
 const oldProfile=profile;
 profile=function(id){
@@ -132,14 +157,14 @@ function fillRep(){const m=mc(el('#v10RepMC')?.value);if(el('#v10RepType'))el('#
 function bracketEdit(id){
  if(!canAdmin)return loginForm();
  let b=BRACKETS.find(x=>x.id===id);
- if(!b){b={id:'br-'+Date.now(),title:'Nova edição',date:new Date().toISOString().slice(0,10),players:Array(8).fill(''),results:{},triples:{},status:'draft'};BRACKETS.push(b);}
+ if(!b){b={id:'br-'+Date.now(),title:'Nova edição',date:new Date().toISOString().slice(0,10),players:Array(8).fill(''),results:{},triples:{},layout:'columns',countAnnual:true,status:'draft'};BRACKETS.push(b);}
  window._v6Editing=b.id;
  const rounds=core.bracketRounds(b),names=data.map(m=>'<option value="'+h(m.name)+'"></option>').join('');
  const matches=rounds.map((ms,r)=>'<h3>'+['Primeira fase','Segunda fase','Semifinal','Final'][r]+'</h3>'+ms.map(m=>{
   const t=m.third,points=m.result?.points||m.participants.map(()=>0);
   return '<div class="v10-match-edit"><b>Confronto '+(m.i+1)+' · '+h(m.key)+'</b><p>'+h(m.a||'A definir')+' × '+h(m.c||'A definir')+(t?' × '+h(t):'')+'</p><div class="v10-third"><button type="button" class="btn" data-v10-show-third="'+h(m.key)+'" '+(t?'hidden':'')+'>+ Adicionar terceiro MC</button><label data-v10-third-wrap="'+h(m.key)+'" '+(t?'':'hidden')+'>Terceiro MC (limpe para remover)<input data-v10-third="'+h(m.key)+'" list="v10-names" placeholder="Nome do terceiro MC" value="'+h(t)+'"></label></div>'+m.participants.map((n,i)=>'<label class="v10-score-row">'+h(n)+'<input type="number" min="0" max="99" data-v10-pts="'+h(m.key)+'" data-v10-pos="'+i+'" value="'+(points[i]??0)+'" '+(t?'':'disabled')+'></label>').join('')+(t?'':'<label>Placar do duelo <select data-v10-outcome="'+h(m.key)+'"><option value="">Pendente</option>'+['2×0','2×1','W.O.'].map(x=>'<option value="'+x+'" '+(m.result?.score===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>')+'<label>Vencedor <select data-v10-win="'+h(m.key)+'"><option value="">Ainda não definido</option>'+m.participants.map(n=>'<option value="'+h(n)+'" '+(m.result?.winner===n?'selected':'')+'>'+h(n)+'</option>').join('')+'</select></label></div>';
  }).join('')).join('');
- open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha até três MCs por confronto. Só um avança. Em caso de empate, selecione manualmente o vencedor. Primeiro salve os nomes para liberar os confrontos seguintes.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Participantes</h3><div class="v10-admin-grid">'+b.players.map((n,i)=>'<label>Vaga '+(i+1)+'<input list="v10-names" data-v10-br-player="'+i+'" value="'+h(n)+'"></label>').join('')+'</div><h3>Resultados</h3>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
+ open('<h2>Editor visual de chaveamento</h2><p class="hint">Escolha até três MCs por confronto. Só um avança. Em caso de empate, selecione manualmente o vencedor. Primeiro salve os nomes para liberar os confrontos seguintes.</p><div class="v10-admin-grid"><label>Nome<input id="v10BrTitle" value="'+h(b.title)+'"></label><label>Número da edição<input id="v10BrNum" type="number" value="'+h(b.editionNumber||'')+'"></label><label>Data<input id="v10BrDate" type="date" value="'+h(b.date)+'"></label><label>Vagas iniciais<select id="v10BrSize">'+[4,8,16].map(n=>'<option value="'+n+'" '+(n===b.players.length?'selected':'')+'>'+n+'</option>').join('')+'</select></label><label>Modelo visual<select id="v10BrLayout"><option value="columns" '+((b.layout||'columns')==='columns'?'selected':'')+'>Clássico · fases em colunas</option><option value="tree" '+(b.layout==='tree'?'selected':'')+'>Árvore conectada</option><option value="mirror" '+(b.layout==='mirror'?'selected':'')+'>Espelhado · final no centro</option></select></label><label><input id="v10BrAnnual" type="checkbox" '+(b.countAnnual===true?'checked':'')+'> Contar no Ranking Anual (inclui participantes automaticamente)</label><label>Visibilidade<select id="v10BrStatus"><option value="draft" '+(b.status==='draft'?'selected':'')+'>Rascunho</option><option value="published" '+(b.status==='published'?'selected':'')+'>Publicado</option></select></label><label><input id="v10BrNoTitle" type="checkbox" '+(b.awardsTitle===false?'checked':'')+'> Esta edição não concede título</label></div><datalist id="v10-names">'+names+'</datalist><h3>Participantes</h3><div class="v10-admin-grid">'+b.players.map((n,i)=>'<label>Vaga '+(i+1)+'<input list="v10-names" data-v10-br-player="'+i+'" value="'+h(n)+'"></label>').join('')+'</div><h3>Prévia da chave no modelo selecionado</h3>'+v6BracketHtml(b)+'<p class="hint">Escolha o modelo acima e salve para atualizar a prévia. O público verá somente o modelo escolhido nesta edição.</p><h3>Resultados · placares abaixo de cada confronto</h3>'+matches+v8BracketLinkForm(b)+'<div class="v10-toolbar"><button class="btn on" data-v10-save-br="'+h(b.id)+'">Salvar chave e placares</button><button class="btn" data-v10-remove-br="'+h(b.id)+'">Excluir torneio</button></div>',true);
 }
 function saveBracket(id){
  const b=BRACKETS.find(x=>x.id===id);if(!b)return;
@@ -147,7 +172,7 @@ function saveBracket(id){
  if(!el('#v10BrTitle')?.value.trim())return toast('Informe o nome da edição.',1);
  if(p.some(x=>x&&!data.some(m=>m.name===x)))return toast('Cadastre primeiro os MCs para participar.',1);
  if(new Set(p.filter(Boolean)).size!==p.filter(Boolean).length)return toast('MC repetido nas vagas.',1);
- b.title=el('#v10BrTitle').value.trim();b.date=el('#v10BrDate').value;b.editionNumber=String(el('#v10BrNum').value||'').replace(/\D/g,'').slice(0,6);b.status=el('#v10BrStatus').value;b.awardsTitle=!el('#v10BrNoTitle').checked;
+ b.title=el('#v10BrTitle').value.trim();b.date=el('#v10BrDate').value;b.editionNumber=String(el('#v10BrNum').value||'').replace(/\D/g,'').slice(0,6);b.status=el('#v10BrStatus').value;b.layout=el('#v10BrLayout')?.value||'columns';b.countAnnual=!!el('#v10BrAnnual')?.checked;b.awardsTitle=!el('#v10BrNoTitle').checked;
  if(change){
   b.players=Array(nextSize).fill('');if(nextSize===p.length)b.players=p;
   b.results={};b.triples={};
