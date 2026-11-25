@@ -284,3 +284,15 @@
 .v10-recover-panel strong{display:block;font-size:14px;color:var(--acc);margin-bottom:7px}
 .v10-recover-panel p{margin:0 0 10px}
 .v10-recover-panel .btn{margin:4px 7px 4px 0;white-space:normal}
+
+/* Arquivo histórico: edições identificadas, sem transformar duelos parciais em placares. */
+.v10-history-panel{padding:16px;margin:18px 0;border:1px solid var(--line);border-radius:12px}
+.v10-history-panel h2{margin:4px 0 12px}
+.v10-history-panel table{min-width:700px}
+.v10-history-panel .btn{margin-top:16px}
+.v10-history-chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px}
+.v10-history-chip{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+.v10-history-chip b{color:var(--acc);margin-right:5px}
+.v10-history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.v10-history-match{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.v10-history-match small{color:var(--mut)}
