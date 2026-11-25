@@ -681,6 +681,13 @@ function importHistory(){
   }
   // Títulos sem edição ficam representados pela contagem, não por números fabricados.
  }
+ // Participantes mencionados só em finais/semifinais também entram com zero títulos.
+ // Nunca imputar títulos ou vitórias a quem é apenas adversário.
+ for(const r of planned)for(const match of r.matches||[])for(const name of match.participants){
+  if(find(name))continue;
+  data.push({id:'hist-support-'+Date.now().toString(36)+'-'+data.length+'-'+Math.random().toString(36).slice(2,7),
+    name,city:'',photo:'',titles:{},unknownTitles:0});
+ }
  const lookup=n=>find(n)?.id||null;
  for(const r of planned){
   for(const match of r.matches||[]){
