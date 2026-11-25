@@ -56,6 +56,17 @@ assert.equal(core.annualTable({year:2026,mcList:mcs,brackets:[extra],season:{}})
 // Resultados registrados manualmente funcionam mesmo sem chaveamento original.
 const manual=[{id:'hist-1',aId:A.id,bId:B.id,winnerId:A.id,score:'2×0',edition:'Edição antiga',date:'2023-05-20'}];
 assert.deepEqual(core.validateV10({data:mcs,brackets:[bracket],cfg:{v10:{manualDuels:manual,seasons:{}}}}),[]);
+// Rodizio automatico: somente duelos com vencedor registrado, sem duplicar pares.
+const paired=core.recordedDuelPairs([bracket],[
+ ...manual,
+ {...manual[0],id:'hist-reverse',aId:B.id,bId:A.id,winnerId:B.id},
+ {id:'bad',aId:'missing',bId:A.id,winnerId:A.id,score:'Outro',edition:'Invalido',date:''}
+],mcs);
+assert.equal(paired.length,3,'Uma luta Double Three nao vira duelo; pares repetidos aparecem uma vez');
+assert(paired.some(x=>x.includes(A.id)&&x.includes(B.id)),'Inclui confrontos historicos');
+assert(paired.some(x=>x.includes(A.id)&&x.includes(C.id)),'Inclui a final publicada');
+assert(paired.some(x=>x.includes(C.id)&&x.includes(D.id)),'Inclui confronto da primeira fase');
+assert.deepEqual(core.recordedDuelPairs([],[],mcs),[],'Sem resultados confirmados nao ha vitrine ficticia');
 const withManual=core.duelHistory(A,B,[bracket],manual,mcs);
 assert.equal(withManual.a,1);
 assert.equal(withManual.b,0);
