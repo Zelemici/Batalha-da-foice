@@ -609,6 +609,7 @@ window.setInterval(()=>{
  const section=el('#v10-duels');
  if(!duelAuto||!section||document.hidden||window._pg!=='home'||
     el('#modal')?.classList.contains('open')||
+    section.querySelector('details[open]')||
     section.contains(document.activeElement)||
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
  const pairs=duelPairs();
