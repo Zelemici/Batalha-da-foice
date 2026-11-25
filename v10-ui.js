@@ -584,3 +584,138 @@ const nav=el('#nv');if(nav){
 const page=document.createElement('div');page.id='pgAnnual';page.hidden=true;el('#pgAbout').after(page);
 if(Array.isArray(data)&&data.length)render();
 })();
+
+
+
+/* Acervo histórico de campeões — importação revisável, não destrutiva.
+ * Títulos/edições não equivalem automaticamente a vitórias contabilizáveis. */
+(function(){
+'use strict';
+const historical=[
+ {name:'Bruno Rodriguês',count:1,editions:['1']},
+ {name:'Jeffinho',count:1,editions:['2']},
+ {name:'Brandon',count:2,editions:['3']},
+ {name:'Maldonado',count:4,editions:['4','6','15','48']},
+ {name:'Jr',count:1,editions:['7'],notes:['Final contra Japa na edição #7'],matches:[{edition:'7',stage:'Final',participants:['Jr','Japa'],winner:'Jr'}]},
+ {name:'Bob',count:7,editions:['10','12','25','41','44','63','Especial: Caravana da Juventude'],notes:['Título 3: final contra Vitin, edição a confirmar'],matches:[{edition:null,stage:'Final',participants:['Bob','Vitin'],winner:'Bob',note:'Referente ao terceiro título; edição não confirmada'}]},
+ {name:'Dia',count:3,editions:['11','20','58'],notes:['Três títulos identificados dentro dos cinco já cadastrados; preservar o total existente']},
+ {name:'Japa',count:1,editions:['17']},
+ {name:'JVV',count:1,editions:['18']},
+ {name:'Mad Dog',count:6,editions:[],notes:['Terceiro título: semifinais Mad Dog x Japa e Bob x Jaime; final Jaime x Mad Dog, edição desconhecida'],matches:[
+  {edition:null,group:'Mad Dog: título 3',stage:'Semifinal',participants:['Mad Dog','Japa'],winner:'Mad Dog'},
+  {edition:null,group:'Mad Dog: título 3',stage:'Semifinal',participants:['Bob','Jaime'],winner:'Jaime'},
+  {edition:null,group:'Mad Dog: título 3',stage:'Final',participants:['Jaime','Mad Dog'],winner:'Mad Dog'}]},
+ {name:'Jaime',count:3,editions:['46','67'],notes:['Final contra Pelé Mil Flows associada a título com edição ainda não confirmada'],matches:[{edition:null,stage:'Final',participants:['Jaime','Pelé Mil Flows'],winner:'Jaime'}]},
+ {name:'Naan',count:1,editions:[],notes:['Final contra Dia; edição desconhecida'],matches:[{edition:null,stage:'Final',participants:['Naan','Dia'],winner:'Naan'}]},
+ {name:'Son',count:3,editions:['45','70'],notes:['Terceira edição ainda desconhecida']},
+ {name:'Ezinho',count:1,editions:['49']},
+ {name:'Valdir',count:1,editions:['51']},
+ {name:'LK',count:1,editions:['52']},
+ {name:'Vieira Zr',count:null,editions:['53','54','55','56','57'],notes:['A lista identifica cinco edições de títulos já existentes; não reduz nem aumenta os 81 títulos registrados']},
+ {name:'Mopa',count:1,editions:['59']},
+ {name:'R10',count:2,editions:['60','62'],notes:['Edição #60: anotação de final Jaime x Verissimo; NÃO atribuir resultado ou campeão desta final sem confirmação'],matches:[{edition:'60',stage:'Final (a conferir)',participants:['Jaime','Verissimo'],winner:null}]},
+ {name:'Rafael',count:1,editions:['64']},
+ {name:'Amaury',count:1,editions:['65']}
+];
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/^mc\s+/i,'').replace(/\s+/g,' ').trim().toLowerCase();
+const escH=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const count=m=>Object.values(m.titles||{}).reduce((a,b)=>a+(Number(b)||0),0)+Math.max(0,Number(m.unknownTitles)||0);
+const cfg=()=>{CFG.v10||={};CFG.v10.historicalArchive||={entries:[],matches:[],importVersion:0};return CFG.v10.historicalArchive;};
+const find=n=>data.find(m=>norm(m.name)===norm(n));
+function plan(){
+ return historical.map(row=>{
+  const matched=find(row.name),present=matched?count(matched):0;
+  return {...row,existingId:matched?.id||null,existingName:matched?.name||null,current:present,
+   added:matched?Math.max(0,(row.count??0)-present):row.count??0,
+   missingEditionCount:row.count===null?null:Math.max(0,row.count-row.editions.length)};
+ });
+}
+function displayPlan(){
+ const rows=plan();
+ const newNames=rows.filter(r=>!r.existingId).length, extra=rows.reduce((a,r)=>a+r.added,0);
+ return '<section class="v10-history-panel"><h2>Importar campeões históricos</h2>'+
+ '<p class="hint">Lista recebida em 24/11/2026. Prévia: '+rows.length+' campeões, '+newNames+' cadastros novos, '+extra+' títulos a incluir. MCs existentes são conciliados por nome e têm sua contagem preservada. Nenhuma alteração acontece até clicar em "Adicionar ao rascunho".</p>'+
+ '<p class="hint">Os duelos históricos são apenas registros documentais: NÃO contam automaticamente no win rate ou confronto direto, para evitar duplicidade e placares inventados. Edições sem número permanecem sem número.</p>'+
+ '<div class="v10-table"><table><thead><tr><th>MC</th><th>Cadastro atual</th><th>Títulos informados</th><th>Adicionar</th><th>Edições identificadas</th></tr></thead><tbody>'+
+ rows.map(r=>'<tr><td>'+escH(r.existingName||r.name)+'</td><td>'+(r.existingId?r.current:'Novo (sem foto)')+'</td><td>'+(r.count===null?'Não informado':r.count)+'</td><td>+'+r.added+'</td><td>'+escH(r.editions.join(', ')||'A confirmar')+'</td></tr>').join('')+
+ '</tbody></table></div><p class="hint">Os registros de Jaime/Pelé Mil Flows e a final Jaime/Verissimo ficam sinalizados para revisão. O título 3 de Bob e Mad Dog fica com edição desconhecida quando não for possível identificar a edição correta.</p>'+
+ '<button type="button" class="btn on" data-v10-import-history>Adicionar ao rascunho com segurança</button></section>';
+}
+function page(){
+ const adm=document.getElementById('adm');if(!adm)return;
+ const panel=adm.querySelector('.asheet');if(!panel)return;
+ const old=panel.querySelector('.v10-history-panel');old?.remove();
+ panel.insertAdjacentHTML('beforeend',displayPlan());
+}
+const originalAdm=admRender;
+admRender=function(){
+ originalAdm();
+ if(!canAdmin)return;
+ const tabs=document.querySelector('#adm .atabs');
+ if(tabs&&!tabs.querySelector('[data-at="v10-historico"]'))tabs.insertAdjacentHTML('beforeend','<button class="btn" data-at="v10-historico">Importar histórico</button>');
+ if(admTab==='v10-historico')page();
+};
+function importHistory(){
+ if(!canAdmin)return;
+ const entries=cfg().entries||[];
+ const existingKeys=new Set(entries.map(e=>norm(e.name)+'|'+String(e.edition)));
+ const archivedMatches=cfg().matches||[];
+ const matchKeys=new Set(archivedMatches.map(m=>[m.edition||'',m.group||'',m.stage,m.participants.join('|')].join('::')));
+ const planned=plan();
+ if(!confirm('Adicionar registros históricos ao RASCUNHO, sem publicar? Os títulos dos MCs já cadastrados serão preservados e nenhuma vitória de confronto será duplicada.'))return;
+ const namesToAdd=new Map();
+ for(const r of planned){
+  let m=find(r.name);
+  if(!m){
+   m={id:'hist-'+Date.now().toString(36)+'-'+data.length+'-'+Math.random().toString(36).slice(2,7),
+     name:r.name,city:'',photo:'',titles:{},unknownTitles:0};
+   data.push(m);namesToAdd.set(norm(r.name),m.id);
+  }
+  const missing=Math.max(0,(r.count??0)-count(m));
+  if(missing)m.unknownTitles=(Number(m.unknownTitles)||0)+missing;
+  for(const edition of r.editions){
+   const key=norm(r.name)+'|'+edition;
+   if(existingKeys.has(key))continue;
+   entries.push({mcId:m.id,name:m.name,edition,verified:true,source:'Lista histórica enviada em 24/11/2026',notes:r.notes||[]});
+   existingKeys.add(key);
+  }
+  // Títulos sem edição ficam representados pela contagem, não por números fabricados.
+ }
+ const lookup=n=>find(n)?.id||null;
+ for(const r of planned){
+  for(const match of r.matches||[]){
+   const key=[match.edition||'',match.group||'',match.stage,match.participants.join('|')].join('::');
+   if(matchKeys.has(key))continue;
+   archivedMatches.push({...match,participantIds:match.participants.map(lookup),
+    winnerId:match.winner?lookup(match.winner):null,
+    source:'Lista histórica enviada em 24/11/2026',statistical:false});
+   matchKeys.add(key);
+  }
+ }
+ const archive=cfg();archive.entries=entries;archive.matches=archivedMatches;archive.importVersion=1;
+ // Não substitui rascunhos antigos, fotos nem BRACKETS; alterações locais sujeitas a publicação posterior.
+ draftSave();render();admRender();
+ toast('Importação salva somente no rascunho: '+planned.length+' campeões processados. Confira os confrontos e publique manualmente.');
+}
+function archivePublic(){
+ const a=CFG?.v10?.historicalArchive;
+ if(!a?.entries?.length)return;
+ const pg=document.getElementById('pgBrackets');if(!pg)return;
+ let root=pg.querySelector('#v10-historical-archive');
+ if(!root){root=document.createElement('section');root.id='v10-historical-archive';root.className='v10-section';pg.append(root);}
+ const sorted=a.entries.slice().sort((x,y)=>Number(x.edition)-Number(y.edition));
+ const badges=sorted.map(e=>'<span class="v10-history-chip"><b>'+escH(e.edition.startsWith('Especial:')?e.edition:'#'+e.edition)+'</b> '+escH(e.name)+'</span>').join('');
+ const matches=(a.matches||[]).map(m=>{
+  const winner=m.winner?'<small>Campeão identificado: '+escH(m.winner)+'</small>':'<small>Resultado não confirmado</small>';
+  return '<div class="v10-history-match"><strong>'+escH(m.group||('Edição '+(m.edition?'#'+m.edition:'desconhecida')))+'</strong><span>'+escH(m.stage)+': '+escH(m.participants.join(' × '))+'</span>'+winner+'</div>';
+ }).join('');
+ root.innerHTML='<div class="v10-eyebrow">Memória da Batalha da Foice</div><h2>Campeões por edição</h2><p class="hint">Arquivo parcial, com edições confirmadas e confrontos documentados. Títulos antigos não representam automaticamente partidas completas registradas.</p><div class="v10-history-chips">'+badges+'</div>'+(matches?'<h3>Chaves históricas parciais</h3><div class="v10-history-grid">'+matches+'</div>':'');
+}
+const originalRender=render;
+render=function(){originalRender();archivePublic();};
+document.addEventListener('click',event=>{
+ if(!event.target.closest('[data-v10-import-history]'))return;
+ event.preventDefault();event.stopImmediatePropagation();importHistory();
+},true);
+if(Array.isArray(data)&&data.length)archivePublic();
+})();
