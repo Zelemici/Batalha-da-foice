@@ -1,4 +1,5 @@
 import '../../v10-core.js';
+import '../../history-2026.js';
 /* Cloudflare Pages Functions — autorização feita NO SERVIDOR. */
 const encoder = new TextEncoder();
 const JSON_HEADERS = {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
@@ -61,5 +62,5 @@ export function validate(d,{forPublish=false}={}){
  issues.push(...globalThis.BDFV10Core.validateV10(d));
  return [...new Set(issues)].slice(0,30);
 }
-export function publicCopy(d){const o={schemaVersion:2,data:d.data,cfg:d.cfg||{},events:(d.events||[]).filter(x=>(x.status||'published')==='published'),gallery:(d.gallery||[]).filter(x=>(x.status||'published')==='published'),champions2026:d.champions2026||[],brackets:(d.brackets||[]).filter(x=>x.status==='published')};return o;}
+export function publicCopy(d){const o={schemaVersion:2,data:d.data,cfg:d.cfg||{},events:(d.events||[]).filter(x=>(x.status||'published')==='published'),gallery:(d.gallery||[]).filter(x=>(x.status||'published')==='published'),champions2026:d.champions2026||[],brackets:(d.brackets||[]).filter(x=>x.status==='published')};return globalThis.BDFHistory.apply(o);}
 export async function initialPublic(context){const url=new URL('/data.json',context.request.url);const res=await context.env.ASSETS.fetch(new Request(url,{method:'GET'}));if(!res.ok)return null;return publicCopy(await res.json());}
