@@ -24,13 +24,27 @@ function hall(){
  const top=data.filter(m=>total(m)>0).slice().sort((a,b)=>total(b)-total(a)||a.name.localeCompare(b.name,'pt-BR')).slice(0,3);
  return '<section class="v10-section"><div class="v10-eyebrow">História da competição</div><h2>Hall dos Campeões</h2><div class="v10-hall">'+top.map((m,i)=>'<button class="v10-champ" data-v10-profile="'+h(m.id)+'"><span class="v10-place">'+(i+1)+'º lugar</span>'+avatars(m)+'<strong>'+h(m.name)+'</strong><span>'+total(m)+' título(s)</span>'+titleShareTag(m)+'</button>').join('')+'</div></section>';
 }
+// A vitrine gira apenas entre duelos documentados; escolha manual fica fixa.
+let duelAuto=true,duelIndex=0;
+const duelPairs=()=>core.recordedDuelPairs(BRACKETS,manualDuels(),data);
 function matchup(){
- const a=mc(v10().compareA)||data[0],b=mc(v10().compareB)||data.find(m=>m.id!==a?.id);
+ const pairs=duelPairs(),autoPair=duelAuto&&pairs.length?pairs[duelIndex%pairs.length]:null;
+ const a=mc(autoPair?.[0])||mc(v10().compareA)||data[0];
+ const b=mc(autoPair?.[1])||mc(v10().compareB)||data.find(m=>m.id!==a?.id);
  if(!a||!b)return '<p>Cadastre ao menos dois MCs.</p>';
  const history=core.duelHistory(a,b,BRACKETS,manualDuels(),data);
  const careerA=career(a),careerB=career(b);
  const duelPct=(count,value)=>count?value+'%':'—';
- return '<section class="v10-section"><div class="v10-eyebrow">Histórico de resultados</div><h2>Confronto Direto</h2><div class="v10-compare"><div class="v10-fighter">'+avatars(a)+'<select data-v10-compare="A" aria-label="Primeiro MC">'+options(a.id)+'</select><strong>'+history.a+' vitórias · '+duelPct(history.matches.length,history.aRate)+' nos duelos</strong><small>'+duelPct(careerA.games,careerA.winRate)+' geral</small></div><div class="v10-vs"><span>VS</span><b>'+history.a+' × '+history.b+'</b><small>'+history.matches.length+' duelo(s)</small></div><div class="v10-fighter">'+avatars(b)+'<select data-v10-compare="B" aria-label="Segundo MC">'+options(b.id)+'</select><strong>'+history.b+' vitórias · '+duelPct(history.matches.length,history.bRate)+' nos duelos</strong><small>'+duelPct(careerB.games,careerB.winRate)+' geral</small></div></div><details class="v10-details"><summary>Histórico de duelos</summary>'+(history.matches.length?history.matches.map(x=>'<p>'+h(x.date||'')+' · '+h(x.edition)+' · '+h(x.winner)+' venceu · '+h(x.score)+'</p>').join(''):'<p>Não há duelos publicados entre esses MCs. Os resultados não são presumidos.</p>')+'</details><small class="hint">Inclui confrontos publicados e resultados antigos cadastrados manualmente. Double Three conta nas estatísticas gerais, mas não como duelo individual. Win rate calculado apenas sobre partidas registradas.</small></section>';
+ const caption=!pairs.length
+  ?'<span>Sem duelos registrados para alternar. Compare dois MCs usando os seletores abaixo.</span>'
+  :duelAuto
+   ?'<span>Destaques automáticos · um confronto registrado a cada 5 segundos. Escolha os MCs para pausar.</span>'
+   :'<span>Comparação manual · rotação pausada.</span><button type="button" class="v10-duel-resume" data-v10-duels-resume>Retomar destaques</button>';
+ return '<section class="v10-section" id="v10-duels" aria-live="off"><div class="v10-eyebrow">Histórico de resultados</div><h2>Confronto Direto</h2><div class="v10-duel-mode">'+caption+'</div><div class="v10-compare"><div class="v10-fighter">'+avatars(a)+'<select data-v10-compare="A" aria-label="Primeiro MC">'+options(a.id)+'</select><strong>'+history.a+' vitórias · '+duelPct(history.matches.length,history.aRate)+' nos duelos</strong><small>'+duelPct(careerA.games,careerA.winRate)+' geral</small></div><div class="v10-vs"><span>VS</span><b>'+history.a+' × '+history.b+'</b><small>'+history.matches.length+' duelo(s)</small></div><div class="v10-fighter">'+avatars(b)+'<select data-v10-compare="B" aria-label="Segundo MC">'+options(b.id)+'</select><strong>'+history.b+' vitórias · '+duelPct(history.matches.length,history.bRate)+' nos duelos</strong><small>'+duelPct(careerB.games,careerB.winRate)+' geral</small></div></div><details class="v10-details"><summary>Histórico de duelos</summary>'+(history.matches.length?history.matches.map(x=>'<p>'+h(x.date||'')+' · '+h(x.edition)+' · '+h(x.winner)+' venceu · '+h(x.score)+'</p>').join(''):'<p>Não há duelos publicados entre esses MCs. Os resultados não são presumidos.</p>')+'</details><small class="hint">Inclui confrontos publicados e resultados antigos cadastrados manualmente. Double Three conta nas estatísticas gerais, mas não como duelo individual. Win rate calculado apenas sobre partidas registradas.</small></section>';
+}
+function refreshDuel(){
+ const section=el('#v10-duels');
+ if(section)section.outerHTML=matchup();
 }
 function annual(){
  const table=standings(),years=[...new Set([year(),...Object.keys(v10().seasons).map(Number)])].sort((a,b)=>b-a);
@@ -562,10 +576,27 @@ async function clickAction(e){
  if(d.v10SaveBr!==undefined)return saveBracket(d.v10SaveBr);
  if(d.v10RemoveBr!==undefined){if(!confirm('Excluir este torneio do rascunho?'))return;BRACKETS=BRACKETS.filter(x=>x.id!==d.v10RemoveBr);save();close();render();return;}
 }
+document.addEventListener('click',e=>{
+ if(!e.target.closest?.('[data-v10-duels-resume]'))return;
+ e.preventDefault();e.stopImmediatePropagation();
+ duelAuto=true;duelIndex=0;refreshDuel();
+},true);
 document.addEventListener('click',e=>{clickAction(e).catch(err=>toast(err.message,1));},true);
 document.addEventListener('change',e=>{
  const t=e.target;
- if(t.dataset.v10Compare){v10()['compare'+t.dataset.v10Compare]=t.value;render();}
+ if(t.dataset.v10Compare){
+  const section=t.closest('#v10-duels');
+  if(!section)return;
+  duelAuto=false;
+  let a=section.querySelector('[data-v10-compare="A"]')?.value||'';
+  let b=section.querySelector('[data-v10-compare="B"]')?.value||'';
+  if(a===b){
+    const alternate=data.find(m=>m.id!==a)?.id||'';
+    if(t.dataset.v10Compare==='A')b=alternate;else a=alternate;
+  }
+  v10().compareA=a;v10().compareB=b;
+  refreshDuel();
+ }
  else if(t.dataset.v10Year!==undefined){v10().year=Number(t.value);render();}
  else if(t.id==='v10AdminYear'){const y=Number(t.value);if(Number.isInteger(y)&&y>=2000&&y<=2100){v10().year=y;admRender();}}
  else if(t.id==='v10TagMC')fillTags();
@@ -573,6 +604,19 @@ document.addEventListener('change',e=>{
  else if(t.id==='v10VidMC')videoList(t.value);
  else if(t.id==='v10FeaturedMC')fillFeatured();
 },true);
+// Atualiza somente o confronto em destaque, sem recriar os cards ou formulários.
+window.setInterval(()=>{
+ const section=el('#v10-duels');
+ if(!duelAuto||!section||document.hidden||window._pg!=='home'||
+    el('#modal')?.classList.contains('open')||
+    section.querySelector('details[open]')||
+    section.contains(document.activeElement)||
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+ const pairs=duelPairs();
+ if(pairs.length<2)return;
+ duelIndex=(duelIndex+1)%pairs.length;
+ refreshDuel();
+},5000);
 // Acesso administrativo mobile por botão no menu; a autenticação Firebase e a autorização no servidor continuam obrigatórias.
 const logo=el('#hLogo');
 if(logo){const clean=logo.cloneNode(true);logo.replaceWith(clean);clean.removeAttribute('tabindex');clean.removeAttribute('role');clean.setAttribute('aria-label','Batalha da Foice');}

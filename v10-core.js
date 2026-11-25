@@ -180,6 +180,19 @@
     }
     return out;
   }
+  // Pares unicos com resultado realmente registrado. Nao inventa confrontos
+  // a partir do cadastro nem inclui duelos de tres participantes.
+  function recordedDuelPairs(brackets=[],manualDuels=[],mcList=[]){
+    const ids=new Set(mcList.map(m=>m.id)),seen=new Set(),pairs=[];
+    for(const battle of completedBattles(brackets,manualDuels,mcList)){
+      if(battle.ids.length!==2||battle.ids[0]===battle.ids[1]||
+         battle.ids.some(id=>!ids.has(id)))continue;
+      const key=[...battle.ids].sort().join('|');
+      if(seen.has(key))continue;
+      seen.add(key);pairs.push([...battle.ids]);
+    }
+    return pairs;
+  }
   function duelHistory(a,b,brackets=[],manualDuels=[],mcList=[]){
     const out={a:0,b:0,matches:[],aRate:0,bRate:0};
     if(!a||!b||a.id===b.id)return out;
@@ -275,5 +288,5 @@
     }else issues.push('Configuração anual inválida');
     return [...new Set(issues)];
   }
-  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,mcNameKey,canonicalMCName,prepareBracketRegistrations,annualTable,duelHistory,mcCareer,completedBattles,titleCount,titleShare,isTwoZero,youtubeId,validVideo,validateV10};
+  root.BDFV10Core={defaults,rules,bracketRounds,invalidateBracketPath,setBracketResult,mcNameKey,canonicalMCName,prepareBracketRegistrations,annualTable,duelHistory,mcCareer,completedBattles,recordedDuelPairs,titleCount,titleShare,isTwoZero,youtubeId,validVideo,validateV10};
 })(globalThis);
