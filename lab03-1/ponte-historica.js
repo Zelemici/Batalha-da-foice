@@ -1,0 +1,2 @@
+/* Integra o catálogo documentado à API histórica existente. */
+(function(root){'use strict';if(!root.BDFArchive)throw Error('Acervo histórico indisponível');root.BDFHistory={apply:root.BDFArchive.apply,champions:root.BDFArchive.allClaims().filter(x=>x.claims.length).map(x=>({edition:'#'+x.number,winners:x.claims.map(c=>c.names)})),historicalBrackets:root.BDFArchive.groupMatches,titleCount:root.BDFArchive.count};})(globalThis);
