@@ -64,6 +64,22 @@ assert.equal(again.data.length,next.data.length,'Segunda importação não cria 
 assert.equal(again.cfg.v10.manualDuels.length,next.cfg.v10.manualDuels.length,'Segunda importação não cria novas vitórias');
 assert.equal(core.titleCount(again.data.find(x=>x.id===get('Zel').id)),7,'Segunda importação não soma títulos');
 assert.equal(again.cfg.v10.editionArchive.catalog.length,194);
+assert.equal(again.cfg.v10.editionArchive.createdProfiles.length,next.cfg.v10.editionArchive.createdProfiles.length,'Lista de perfis originados no arquivo permanece após recarregar a API');
+const beforeLegacy=structuredClone(original);
+beforeLegacy.data.push({id:'old-bob',name:'BOB',city:'',photo:'',titles:{},unknownTitles:7});
+beforeLegacy.data.push({id:'old-jvv',name:'JVV',city:'',photo:'',titles:{},unknownTitles:1});
+beforeLegacy.cfg={v10:{
+ manualDuels:[{id:'hist2026-jr-7-1',aId:'old-jvv',bId:'old-bob',winnerId:'old-jvv',edition:'#7',score:'Outro',date:''}],
+ historicalBrackets:[{id:'hist2026-jr-7',edition:'#7',champion:'JR',rounds:[]}]
+}};
+const revised=apply(beforeLegacy);
+assert.equal(core.titleCount(revised.data.find(x=>x.id==='old-bob')),7,'Nem mesmo cadastros históricos existentes têm a contagem aumentada');
+assert.equal(revised.data.filter(m=>archive.canonical(m.name)==='JV').length,1,'JVV e JV são reconciliados');
+assert(revised.data.find(x=>x.id==='old-bob').archiveEditionIds.some(x=>x.status==='conferir'),'Discrepâncias entre 7 títulos atuais e mais edições documentadas ficam sinalizadas');
+assert(!revised.cfg.v10.manualDuels.some(x=>String(x.id).startsWith('hist2026-')),'Importações antigas incorretas de confronto direto são removidas');
+assert(!revised.cfg.v10.historicalBrackets.some(x=>String(x.id).startsWith('hist2026-')),'Chaves antigas incorretas são retiradas da prévia');
+assert(revised.cfg.v10.editionArchive.createdProfiles.some(x=>x.name==='Vitin'),'Adversário sem título mencionado no registro antigo não é apagado do acervo');
+
 const duplicate=apply({data:[{id:'already',name:'MC Jeffinho',titles:{2022:2}}],cfg:{}});
 assert.equal(duplicate.data.filter(m=>archive.canonical(m.name)==='Jeffinho').length,1,'MC Jeffinho vira Jeffinho sem duplicar');
 assert.equal(core.titleCount(duplicate.data.find(x=>x.id==='already')),2,'Contagem diferente deve ser preservada');
