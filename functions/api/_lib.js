@@ -1,4 +1,5 @@
 import '../../v10-core.js';
+import '../../archive-2026.js';
 import '../../history-2026.js';
 /* Cloudflare Pages Functions — autorização feita NO SERVIDOR. */
 const encoder = new TextEncoder();
