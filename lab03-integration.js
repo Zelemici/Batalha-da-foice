@@ -61,7 +61,7 @@ const previousRender=render;
 render=function(){
  // O arquivo de referência inicia pelo Arquivo de Guerra. Isto vale
  // para a prévia LAB03.1, sem persistir ou publicar a escolha no servidor.
- if(!initialized){initialized=true;if(!window._pv)window._pv='archive';}
+ if(!initialized){initialized=true;window._lab03Visual='archive';}
  previousRender();
  shell();galleryCards();categoryTabs();zeroTitleSection();
 };
