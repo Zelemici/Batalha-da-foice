@@ -124,6 +124,7 @@ for(const rows of byEdition.values())for(const claim of rows)for(const name of c
 for(const [, ,winner,loser] of DIRECT){identityNames.add(canonical(winner));identityNames.add(canonical(loser));}
 for(const g of GROUP_MATCHES)for(const name of [...g.winner,...g.other])identityNames.add(canonical(name));
 identityNames.add('Vieira Zr'); // Vitória em seletiva regional citada sem número de edição.
+identityNames.add('Vitin'); // Adversário de registro anterior, sem título e sem edição identificada.
 function allClaims(){return Array.from({length:194},(_,i)=>{
  const n=i+1,claims=byEdition.get(n)||[];
  const conflict=claims.length>1&&claims.some(c=>c.format!=='dupla');
@@ -194,7 +195,7 @@ function apply(source){
    specialUnnumbered:[{category:'regional',mcId:get('Vieira Zr').id,note:'Campeão de seletiva regional; número da edição a confirmar'}],
    issues:[{type:'duplicate_edition',number:146,note:'A edição #146 aparece para Vieira Zr e Street; não presumir dupla nem duas edições.'},
            {type:'year_unknown',start:189,end:194,note:'Ano não indicado após a última marcação de 2026.'}],
-   createdProfiles:created};
+   createdProfiles:[...(source.cfg?.v10?.editionArchive?.createdProfiles||[]),...created].filter((x,i,arr)=>arr.findIndex(a=>a.id===x.id)===i)};
  cfg.v10=v10;out.cfg=cfg;
  return out;
 }
