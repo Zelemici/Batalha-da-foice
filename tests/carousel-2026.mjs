@@ -1,39 +1,34 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-
-// Executa a função real do HTML, sem reimplementá-la no teste.
+import '../lab03-carousel.js';
+const build=globalThis.BDFLab03Carousel.createEntries;
+const mcs=[{id:'a',name:'Alfa',titles:{2026:3}},{id:'b',name:'Beta',titles:{2026:1}},{id:'c',name:'Gama',titles:{2025:20}},{id:'d',name:'Delta',titles:{2026:0}}];
+const entries=build(mcs,[]);
+assert.equal(entries.length,4,'Uma entrada por título de 2026, e não apenas por MC');
+assert.equal(entries.filter(x=>x.mc.id==='a').length,3);
+assert(entries.every(x=>x.edition==='Edição pendente'&&!x.bracket));
+assert.deepEqual(entries.filter(x=>x.mc.id==='a').map(x=>x.ordinal),[1,2,3]);
+assert.equal(mcs[0].titles[2026],3,'A exibição não pode modificar títulos');
+const linked={id:'ch1',status:'published',players:['Alfa','Beta','Gama','Delta'],
+  results:{'0-0':{winner:'Alfa'},'0-1':{winner:'Gama'},'1-0':{winner:'Alfa'}},
+  title:'Edição 200',editionNumber:'200',titleLink:{mcId:'a',year:'2026',ordinal:2}};
+const withLink=build(mcs,[linked]);
+assert.equal(withLink.length,4,'Vincular uma chave não aumenta a contagem');
+assert.equal(withLink.filter(x=>x.bracket).length,1);
+assert.equal(withLink.find(x=>x.mc.id==='a'&&x.ordinal===2).edition,'BDF #200');
+assert(withLink.filter(x=>x.mc.id==='a'&&!x.bracket).every(x=>x.edition==='Edição pendente'));
+assert.equal(build(mcs,[{...linked,status:'draft'}]).filter(x=>x.bracket).length,0,'Rascunho não deve surgir como conquista publicada');
+assert.equal(build(mcs,[{...linked,results:{...linked.results,'1-0':{winner:'Gama'}}}]).filter(x=>x.bracket).length,0,'Campeão inconsistente não identifica edição');
+assert.equal(build(mcs,[linked,{...linked,id:'ch2'}]).filter(x=>x.bracket).length,0,'Vínculos duplicados precisam permanecer pendentes');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const start=html.indexOf('function bdfCarouselEntries(){');
-const end=html.indexOf('\nfunction renderChampionsV6()',start);
-assert(start>=0&&end>start,'Carrossel de 2026 deve existir');
-const source=html.slice(start,end);
-const makeContext=(data,BRACKETS=[])=>{
- const context={data,BRACKETS,bdfCarouselOrder:null,
-  bdfRoundSummary:b=>({winner:b.winner||''}),
-  bdfEditionLabel:b=>b.title||'Edição',
-  Math};
- vm.createContext(context);
- vm.runInContext(source,context);
- return context;
-};
-const mcs=[
- {id:'a',name:'Alfa',titles:{2026:2}},
- {id:'b',name:'Beta',titles:{2026:1}},
- {id:'c',name:'Gama',titles:{2025:20}},
- {id:'d',name:'Delta',titles:{2026:0}}
-];
-const ctx=makeContext(mcs);
-let entries=Array.from(vm.runInContext('bdfCarouselEntries()',ctx));
-assert.deepEqual(entries.map(x=>x.mc.id).sort(),['a','b'],'Todos e somente os titulados de 2026 aparecem sem chaves');
-assert(entries.every(x=>/pendente/.test(x.edition)),'Sem chave não se pode inventar número de edição');
-assert(entries.find(x=>x.mc.id==='a').status.includes('2 títulos'));
-assert(entries.find(x=>x.mc.id==='b').status.includes('1 título'));
-assert.equal(mcs[0].titles[2026],2,'Renderizar não deve alterar títulos');
-const published={id:'ch1',status:'published',players:['Alfa','Beta','Gama','Delta'],winner:'Alfa',title:'BDF 2026'};
-const linked=makeContext(mcs,[published]);
-entries=Array.from(vm.runInContext('bdfCarouselEntries()',linked));
-assert.equal(entries.filter(x=>x.mc?.id==='a').length,1,'Campeão vinculado não deve duplicar registro pendente');
-assert(entries.some(x=>x.id==='br:ch1'),'Chave publicada deve aparecer');
-assert(entries.some(x=>x.mc?.id==='b'),'Campeão sem chave deve continuar aparecendo');
-console.log('Carrossel de 2026: todos os campeões, contagem pendente e não duplicação OK.');
+assert(html.includes('<script src="lab03-carousel.js"></script>'),'Módulo deve ser carregado no HTML');
+assert(html.includes('carouselVisible'),'Controle do ADM deve existir');
+assert(html.includes('data-bdf-profile'),'Perfil deve ser acessível pelo card');
+assert(html.includes('data-v6-slide'),'Setas de navegação mantidas');
+const start=html.indexOf('function bdfCarouselEntries(){'),end=html.indexOf('\nfunction renderChampionsV6(){',start);
+assert(start>=0&&end>start);
+const context={data:mcs,BRACKETS:[linked],BDFLab03Carousel:globalThis.BDFLab03Carousel,bdfCarouselOrder:null,Math};
+vm.createContext(context);vm.runInContext(html.slice(start,end),context);
+assert.equal(vm.runInContext('bdfCarouselEntries().length',context),4);
+console.log('LAB03.1: títulos 2026, múltiplas vitórias, pendências, perfis, links e controle ADM OK.');
