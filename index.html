@@ -732,6 +732,21 @@ async function boot(){
   if(!j){const el=document.getElementById('bdf-data-local');if(el)j=JSON.parse(el.textContent)}
  }
  if(!j||!Array.isArray(j.data)){toast('Erro ao carregar os dados do ranking.',1);return}
+ // Recuperação não destrutiva dos registros publicados na prévia original enviada.
+ // Mídias de rascunho não entram na cópia pública. IDs existentes têm prioridade.
+ try{
+  const backupResponse=await fetch('galeria-arquivo-lab03.json',{cache:'no-store'});
+  if(backupResponse.ok){
+   const backup=await backupResponse.json();
+   if(Array.isArray(backup.gallery)){
+    const merged=new Map((Array.isArray(j.gallery)?j.gallery:[]).map(g=>[String(g.id),g]));
+    for(const entry of backup.gallery){
+     if(entry?.status==='published'&&entry.id&&!merged.has(String(entry.id)))merged.set(String(entry.id),entry);
+    }
+    j.gallery=[...merged.values()];
+   }
+  }
+ }catch(e){console.warn('Acervo de galeria indisponível; mantendo dados publicados existentes.')}
  j=globalThis.BDFHistory?.apply(j)||j;
  data=j.data;EV=j.events||[];LOG=[];GAL=j.gallery||[];BRACKETS=j.brackets||[];
  CHAMPS=j.champions2026||data.filter(m=>(m.titles?.['2026']||0)>0).map(m=>m.id);
