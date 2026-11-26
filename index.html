@@ -497,6 +497,39 @@ body.lay-street .sr:hover{transform:translateX(3px);box-shadow:none!important;}
 .bdf-archive-round{min-width:180px;flex:1}.bdf-archive-round h4{margin:0 0 10px;color:var(--acc)}
 .bdf-archive-match{border:1px solid var(--line);padding:10px;border-radius:8px;margin-bottom:9px;line-height:1.7;background:#0003}
 .bdf-archive-winner{color:var(--acc);font-weight:800}
+
+/* LAB03.1 — ARQUIVO DE GUERRA: aparência documental, exclusiva do layout de ranking.
+   Não alterar registros nem regras de títulos. */
+.lmini.archive{background:#121212;border:1px solid #858585}
+.lmini.archive i{height:17px;display:block;border:1px solid #a7a7a7;background:linear-gradient(90deg,#eee 0 22%,#202020 22% 100%);border-radius:1px}
+.lmini.archive i:nth-child(2){background:linear-gradient(90deg,#b9b9b9 0 22%,#383838 22% 100%)}
+.lmini.archive i:nth-child(3){background:linear-gradient(90deg,#7f7f7f 0 22%,#171717 22% 100%)}
+body.lay-archive{background:radial-gradient(ellipse at 48% -8%,#85858526,transparent 48%),repeating-linear-gradient(0deg,#ffffff06 0 1px,transparent 1px 5px),#080808!important}
+body.lay-archive #pgRank .list{gap:18px;padding-left:0}
+body.lay-archive #pgRank .card,
+body.lay-archive #top2 .card{
+  --c1:#202020!important;--c2:#111!important;--e:#aaa!important;
+  background:linear-gradient(105deg,#ffffff10,transparent 44%),repeating-linear-gradient(0deg,#ffffff08 0 1px,transparent 1px 7px),#191919!important;
+  color:#f4f4f4!important;border:1px solid #747474!important;border-left:6px solid #ddd!important;
+  border-radius:2px!important;box-shadow:5px 5px 0 #000,0 0 0 1px #242424!important;
+  margin-left:0!important;overflow:hidden;filter:grayscale(1)
+}
+body.lay-archive #pgRank .card::before,
+body.lay-archive #top2 .card::before{display:none!important}
+body.lay-archive #pgRank .card:hover,
+body.lay-archive #top2 .card:hover{border-color:#f5f5f5!important;transform:translateY(-2px)}
+body.lay-archive #pgRank .card .nm,
+body.lay-archive #top2 .card .nm{text-transform:uppercase;letter-spacing:.045em}
+body.lay-archive #pgRank .card .tags,
+body.lay-archive #top2 .card .tags{color:#dedede}
+body.lay-archive #pgRank .card .ph,
+body.lay-archive #top2 .card .ph{border-radius:0!important;border:2px solid #aaa!important;filter:grayscale(1)}
+body.lay-archive #pgRank .card .card-rank,
+body.lay-archive #top2 .card .card-rank{color:#fff!important}
+body.lay-archive #pgRank .card::after,
+body.lay-archive #top2 .card::after{content:'ARQUIVO • BATALHA DA FOICE';position:absolute;right:8px;bottom:5px;font:600 9px/1.2 monospace;letter-spacing:.13em;color:#9a9a9a;pointer-events:none}
+@media(max-width:620px){body.lay-archive #pgRank .card,body.lay-archive #top2 .card{border-left-width:4px!important}body.lay-archive #pgRank .card::after,body.lay-archive #top2 .card::after{font-size:7px;letter-spacing:0}}
+
 </style>
 <style>
 .mem-photo-stage,.mem-tag-stage{position:relative;max-width:760px;margin:14px auto;overflow:hidden;background:#111}
@@ -684,7 +717,7 @@ async function flush(){
 function schedule(){draftSave();publishState='pending';toast('Rascunho salvo neste navegador. Use Publicar para enviar após configurar o acesso seguro.')}
 function save(){schedule()}
 function saveC(){schedule()}
-async function publishLayout(layout,button){if(!['classic','street'].includes(layout))return;CFG.layout=layout;window._pv=null;window._sel=layout;draftSave();publishState='pending';render();toast('Layout alterado no rascunho. Publicação separada e protegida.')}
+async function publishLayout(layout,button){if(!['classic','street','archive'].includes(layout))return;CFG.layout=layout;window._pv=null;window._sel=layout;draftSave();publishState='pending';render();toast('Layout alterado no rascunho. Publicação separada e protegida.')}
 async function boot(){
  canAdmin=false;let j=null;
  try{
@@ -902,7 +935,7 @@ function render(){applyCfg();
  $('#pgAbout').innerHTML='<h2 class="pt">Sobre o campeonato</h2><p style="white-space:pre-line;max-width:700px;color:var(--mut)">'+esc(CFG.about)+'</p>';
  [['#pgPriv','privacidade'],['#pgTerms','termos'],['#sortbar','ranking'],['#list','ranking'],['#pgHome','home'],['#pgRec','recordes'],['#pgCal','calendario'],['#pgMem','memoria'],['#pgBrackets','chaves'],['#pgAbout','sobre']].forEach(([s,p])=>{$(s).hidden=window._pg!=p});
  $('#more').hidden=window._pg!='ranking'||l.length<=lim;
- playerRender();$('#abar').hidden=!editing;document.body.classList.toggle('lay-street',lay()=='street');{const pb=$('#pvbar');pb.hidden=!window._pv;if(window._pv)pb.innerHTML='Prévia do layout '+(window._pv=='street'?'Street':'Clássico')+' · o público ainda vê o '+((CFG.layout||'classic')=='street'?'Street':'Clássico')+' <button class="btn" data-pvpub>Salvar e publicar layout</button><button class="btn" data-pvexit>Sair da prévia</button>'}
+ playerRender();$('#abar').hidden=!editing;document.body.classList.toggle('lay-street',lay()=='street');document.body.classList.toggle('lay-archive',lay()==='archive');{const pb=$('#pvbar');pb.hidden=!window._pv;if(window._pv)pb.innerHTML='Prévia do layout '+(window._pv==='archive'?'Arquivo de Guerra P&B':window._pv==='street'?'Street':'Clássico')+' · o público ainda vê o '+((CFG.layout||'classic')==='archive'?'Arquivo de Guerra P&B':(CFG.layout||'classic')==='street'?'Street':'Clássico')+' <button class="btn" data-pvpub>Salvar e publicar layout</button><button class="btn" data-pvexit>Sair da prévia</button>'}
  document.querySelectorAll('.fbar [data-f]').forEach(b=>{const t=TIERS[+b.dataset.f];if(t&&/^\d+$/.test(b.dataset.f))b.textContent=t.n});
  document.querySelectorAll('.nv a').forEach(a=>a.classList.toggle('on',(a.getAttribute('href')=='#/'+(window._pg=='home'?'':window._pg)||a.getAttribute('href')==='#/edicoes'&&window._pg==='chaves')));
  
@@ -996,7 +1029,7 @@ document.addEventListener('click',e=>{
  if(t.hasAttribute('data-abexit')){editing=false;$('#adm').classList.remove('open');return render()}
  const ls=t.closest('[data-lsel]');if(ls){window._sel=ls.dataset.lsel;return admRender()}
  if(t.hasAttribute('data-lprev')){window._pv=window._sel||CFG.layout||'classic';$('#adm').classList.remove('open');location.hash='#/ranking';return render()}
- if(t.hasAttribute('data-lpub')||t.hasAttribute('data-pvpub')){const k=t.hasAttribute('data-pvpub')?window._pv:(window._sel||CFG.layout||'classic');if(!confirm('Publicar o layout '+(k=='street'?'Street':'Clássico')+' para todos os visitantes?'))return;publishLayout(k,t);return}
+ if(t.hasAttribute('data-lpub')||t.hasAttribute('data-pvpub')){const k=t.hasAttribute('data-pvpub')?window._pv:(window._sel||CFG.layout||'classic');if(!confirm('Publicar o layout '+(k==='archive'?'Arquivo de Guerra P&B':k==='street'?'Street':'Clássico')+' para todos os visitantes?'))return;publishLayout(k,t);return}
  if(t.hasAttribute('data-pvexit')){window._pv=null;return render()}
  if(t.dataset.go){location.hash='#/'+t.dataset.go;scrollTo(0,0);return}
  if(t.id=='more'){window._lim=(window._lim||24)+10;return render()}
@@ -1064,7 +1097,7 @@ function admRender(){
  }else if(admTab=='lay'){
   const cur=CFG.layout||'classic',sel=window._sel||cur;
   const opt=(k,t,d,mini)=>`<button class="lopt ${sel==k?'on':''}" data-lsel="${k}" aria-pressed="${sel==k}"><div class="lmini ${k}">${mini}</div><b>${t}</b><small>${d}</small>${cur==k?'<em>PUBLICADO</em>':''}</button>`;
-  b=`<p class="hint">Estado da publicação: <b>${{idle:"Sem publicação iniciada",pending:"Pendente",publishing:"Publicando no GitHub",confirmed:"Confirmado pelo GitHub",error:"Falha: rascunho preservado"}[publishState]}</b></p><p class="hint">Escolha como o ranking aparece para todos os visitantes. Os dois layouts usam os mesmos dados.</p><div class="lgrid">`+opt('classic','Ranking Clássico','Cards coloridos, total de títulos e anos com vitórias registradas.','<i></i><i></i><i></i>')+opt('street','Ranking Street','Molduras urbanas por categoria, grafite e resumo dos títulos.','<i></i><i></i><i></i>')+`</div><div class="bar"><button class="btn" data-lprev>Visualizar prévia</button><button class="btn on" data-lpub>${LOCAL_PREVIEW&&!G?'Salvar layout nesta prévia':'Salvar e publicar layout'}</button></div><p class="hint">Selecionado/publicado no arquivo carregado: <b>${cur=='street'?'Street':'Clássico'}</b>. A prévia só você vê; o botão publicar aguarda o commit do GitHub e confere a configuração gravada.</p><h3>Registro histórico</h3><p class="hint">Os dois layouts mostram o total de títulos e o número de anos com vitórias registradas. Os detalhes por ano ficam no formulário administrativo de cada MC. As antigas opções de indicadores permanecem guardadas no JSON, sem aparecer no site público.</p>`;
+  b=`<p class="hint">Estado da publicação: <b>${{idle:"Sem publicação iniciada",pending:"Pendente",publishing:"Publicando no GitHub",confirmed:"Confirmado pelo GitHub",error:"Falha: rascunho preservado"}[publishState]}</b></p><p class="hint">Escolha como o ranking aparece para todos os visitantes. Os três layouts usam os mesmos dados.</p><div class="lgrid">`+opt('classic','Ranking Clássico','Cards coloridos, total de títulos e anos com vitórias registradas.','<i></i><i></i><i></i>')+opt('street','Ranking Street','Molduras urbanas por categoria, grafite e resumo dos títulos.','<i></i><i></i><i></i>')+opt('archive','Arquivo de Guerra · P&B','Acervo documental com cartões em preto, branco e cinza, numeração, contraste editorial e identidade histórica.','<i></i><i></i><i></i>')+`</div><div class="bar"><button class="btn" data-lprev>Visualizar prévia</button><button class="btn on" data-lpub>${LOCAL_PREVIEW&&!G?'Salvar layout nesta prévia':'Salvar e publicar layout'}</button></div><p class="hint">Selecionado/publicado no arquivo carregado: <b>${cur==='archive'?'Arquivo de Guerra P&B':cur==='street'?'Street':'Clássico'}</b>. A prévia só você vê; o botão publicar aguarda o commit do GitHub e confere a configuração gravada.</p><h3>Registro histórico</h3><p class="hint">Os três layouts mostram o total de títulos e o número de anos com vitórias registradas. Os detalhes por ano ficam no formulário administrativo de cada MC. As antigas opções de indicadores permanecem guardadas no JSON, sem aparecer no site público.</p>`;
  }else if(admTab=='ap'){
   const A=CFG.ap||{},F=['Anton','Outfit','Inter','Roboto','Poppins','Montserrat','Oswald','Bebas Neue','Rajdhani','Orbitron'];
   const sl=(k,l,mn,mx,d)=>`<label class="fld">${l}: ${A[k]||d}</label><input class="w" type="range" min="${mn}" max="${mx}" data-ap="${k}" value="${A[k]||d}">`,cl=(k,l,d)=>`<label class="fld">${l}</label><input type="color" data-ap="${k}" value="${A[k]||d}">`,sel=(k,l,o,d)=>`<label class="fld">${l}</label><select class="w" data-ap="${k}">${o.map(x=>`<option ${(A[k]||d)==x?'selected':''}>${x}</option>`).join('')}</select>`,ck=(k,l)=>`<label class="tgl"><input type="checkbox" data-ap="${k}" ${A[k]===0?'':'checked'}> ${l}</label>`;
