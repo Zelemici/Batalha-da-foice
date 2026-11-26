@@ -1255,7 +1255,7 @@ async function v6SignIn(){
    }
   }catch(e){toast('Rascunho remoto indisponível: '+e.message,1)}
   render();toast('Acesso administrativo validado no servidor.');
- }catch(e){G=null;canAdmin=false;toast(e.message||'Não foi possível entrar.',1)}
+ }catch(e){G=null;canAdmin=false;const msg=e.message||'Não foi possível entrar.';if(msg.includes('Servidor administrativo ainda não configurado')){close();open('<h2>ADM indisponível nesta prévia</h2><p>O login do Firebase não substitui a configuração do ambiente Cloudflare Pages. Esta prévia precisa ter <code>FIREBASE_PROJECT_ID</code>, <code>BDF_ADMIN_UID</code> e a vinculação KV <code>BDF_KV</code> definidos no ambiente de pré-visualização.</p><p class="hint">Por segurança, nenhuma função administrativa foi liberada sem validação do servidor. Configure essas três entradas em Cloudflare Pages → projeto → Configurações e reimplante a prévia. O guia completo está no repositório: CONFIGURAR-LOGIN-E-CLOUDFLARE.md.</p><button class="btn" data-bdf-close-admin-note>Entendi</button>',true)}else toast(msg,1)}
 }
 async function bdfForgotPassword(){
  const email=document.getElementById('v6email')?.value.trim();if(!email)return toast('Informe seu e-mail para receber a recuperação.',1);
@@ -1268,6 +1268,7 @@ function pubForm(){if(!G?.t){loginForm();return}open('<h2>Publicação protegida
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
  if(t.dataset.v6Slide){document.querySelector('#v6champScroll')?.scrollBy({left:240*+t.dataset.v6Slide,behavior:'smooth'});return}
+ if(t.hasAttribute('data-bdf-close-admin-note')){close();return}
  if(t.hasAttribute('data-v6-login')){await v6SignIn();return}
  if(t.hasAttribute('data-bdf-forgot')){await bdfForgotPassword();return}
  if(t.hasAttribute('data-bdf-save-server')){try{t.disabled=true;await bdfServerDraft();close()}catch(x){toast(x.message,1)}finally{t.disabled=false}return}
