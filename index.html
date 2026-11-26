@@ -416,6 +416,8 @@ body.lay-street #legend{display:none}
 .bdf-carousel-mask:after{right:0;background:linear-gradient(270deg,#181013,transparent)}
 #v6champScroll.bdf-editions{display:flex;gap:10px;overflow-x:auto;padding:8px 4px 15px;scrollbar-width:none;scroll-snap-type:none;touch-action:pan-x;overscroll-behavior-x:contain}
 #v6champScroll.bdf-editions::-webkit-scrollbar{display:none}
+.bdf-default-avatar{display:grid;place-items:center;width:100%;height:100%;min-height:55px;background:linear-gradient(140deg,#38291d,#19171a);color:#ffb469;font:400 30px Anton,Impact,sans-serif}
+.bdf-edition-portrait[data-bdf-profile],.bdf-edition-meta strong[data-bdf-profile]{cursor:pointer}
 .bdf-edition{flex:0 0 auto;display:flex;gap:8px;min-width:192px;max-width:248px;align-items:center;padding:9px 14px 9px 9px;border:1px solid #6a4027;background:linear-gradient(120deg,#090a0c,#25180e);border-radius:999px;color:#f6f1ee;text-align:left;cursor:pointer;transition:background .2s,border-color .2s,transform .2s;font:inherit}
 .bdf-edition:is(:hover,:focus-visible),.bdf-edition[aria-expanded="true"]{outline:none;border-color:#ffa63d;background:linear-gradient(110deg,#241708,#372317);transform:translateY(-2px)}
 .bdf-edition-portrait{position:relative;display:grid;place-items:center;flex:0 0 47px;width:47px;height:47px;border-radius:50%;overflow:hidden;background:#37261a;border:2px solid #ff9c29;box-shadow:0 0 0 3px #f39b1d22;font:700 24px Arial,sans-serif;color:#ffad5c}
@@ -601,6 +603,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 <script src="auth-config.js"></script>
 <script src="v10-core.js"></script>
 <script src="history-2026.js"></script>
+<script src="lab03-carousel.js"></script>
 <script>
 // ===== CONFIGURAÇÃO — ajuste as faixas de cor/raridade aqui =====
 let TIERS=[
@@ -1248,32 +1251,28 @@ const bdfEditionLabel=b=>bdfEditionNumber(b)?'BDF '+bdfEditionNumber(b):String(b
 const bdfRoundSummary=b=>{const r=v6BracketRounds(b),final=r.at(-1)?.[0],w=final?.result?.winner||'';return {rounds:r,winner:w,vice:w?(final.a===w?final.c:final.a):'',matches:r.flat().filter(x=>x.result)}};
 const bdfAvatar=m=>m?(m._tmp||m.photo):'';
 function bdfCarouselEntries(){
- const registered=BRACKETS.filter(b=>b.status==='published'&&[4,8,16].includes(b.players?.length)).map(b=>{
-  const info=bdfRoundSummary(b),m=data.find(x=>x.name===info.winner);
-  return {id:'br:'+b.id,bracket:b,name:info.winner||'A definir',mc:m||null,edition:bdfEditionLabel(b),status:info.winner?'Concluída':'Em andamento'};
- });
- const covered=new Set(registered.filter(e=>e.mc).map(e=>e.mc.id));
- // Todos os campeões com títulos registrados em 2026 entram automaticamente.
- // A seleção legada do ADM é preservada somente para campeões que já têm título em 2026.
- const winners2026=data.filter(m=>Number(m.titles?.['2026']||0)>0);
- const unlinked=winners2026.filter(m=>!covered.has(m.id)).map(m=>{
-  const count=Number(m.titles?.['2026']||0);
-  return {id:'mc:'+m.id,mc:m,name:m.name,edition:'2026 · edição pendente',status:count+' '+(count===1?'título registrado':'títulos registrados')};
- });
- const entries=[...registered,...unlinked]; // A falta de um chaveamento não oculta o campeão de 2026.
+ const entries=BDFLab03Carousel.createEntries(data,BRACKETS,2026);
+ // Conservar a ordenação estável mesmo depois do cadastro de novos campeões.
  if(!bdfCarouselOrder)bdfCarouselOrder=entries.map(x=>x.id).sort(()=>Math.random()-.5);
  return entries.sort((a,b)=>{const ai=bdfCarouselOrder.indexOf(a.id),bi=bdfCarouselOrder.indexOf(b.id);return (ai<0?999:ai)-(bi<0?999:bi)});
 }
 function renderChampionsV6(){
+ if(!v8Settings().carouselVisible)return '';
  const entries=bdfCarouselEntries();window._bdfEntries=entries;
- const item=(e,dup=false)=>{const m=e.mc,T=m?TIERS[tierOf(total(m))]:null,photo=bdfAvatar(m),tone=T?.glow||T?.col||'#ffa43d';return `<button class="bdf-edition" data-bdf-peek="${esc(e.id)}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-expanded="false" style="--mc-tone:${esc(tone)}" title="Ver resumo da ${esc(e.edition)}"><span class="bdf-edition-portrait">${photo?`<img src="${esc(photo)}" loading="lazy" alt="">`:`${esc((e.name||'?')[0])}`}</span><span class="bdf-edition-meta"><strong>${esc(e.name)}</strong><small>${esc(e.edition)}</small><em>${esc(e.status)}</em></span></button>`};
+ const item=(e,dup=false)=>{
+  const m=e.mc,T=m?TIERS[tierOf(total(m))]:null,photo=bdfAvatar(m),tone=T?.glow||T?.col||'#ffa43d';
+  const avatar=photo?`<img src="${esc(photo)}" loading="lazy" alt="Foto de ${esc(e.name)}">`:`<span class="bdf-default-avatar" aria-label="Sem fotografia">${esc((e.name||'?')[0])}</span>`;
+  return `<button type="button" class="bdf-edition" data-bdf-peek="${esc(e.id)}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-expanded="false" style="--mc-tone:${esc(tone)}" title="Conquista ${e.ordinal} de ${e.titleCount} · ${esc(e.name)}"><span class="bdf-edition-portrait" data-bdf-profile="${esc(m.id)}" title="Ver perfil de ${esc(e.name)}">${avatar}</span><span class="bdf-edition-meta"><strong data-bdf-profile="${esc(m.id)}" title="Ver perfil">${esc(e.name)}</strong><small>${esc(e.edition)}</small><em>${esc(e.ordinal+' de '+e.titleCount+' títulos em 2026')}</em></span></button>`;
+ };
  const markup=entries.map(e=>item(e)).join('');
- return `<div class="v6-section-head"><div><div class="v6-kicker">Batalha da Foice · histórico de 2026</div><h2>Edições e campeões</h2><p class="bdf-ed-note">Passe o mouse ou toque para ver o resumo; abra o chaveamento completo.</p></div><div class="v6-btns"><button type="button" data-v6-slide="-1" aria-label="Edições anteriores">←</button><button type="button" data-v6-slide="1" aria-label="Próximas edições">→</button></div></div><div class="bdf-carousel-mask"><div id="v6champScroll" class="bdf-editions" aria-label="Carrossel de edições da BDF">${markup}${entries.length>2?entries.map(e=>item(e,true)).join(''):''}${!entries.length?'<p class="hint">As edições aparecerão aqui quando houver campeões ou torneios cadastrados.</p>':''}</div></div><p class="bdf-ed-note">Os números das edições só aparecem após cadastro; resultados não registrados ficam pendentes.</p>`;
+ return `<div class="v6-section-head"><div><div class="v6-kicker">Batalha da Foice · histórico de 2026</div><h2>Histórico de Campeões de 2026</h2><p class="bdf-ed-note">Cada card corresponde a um título registrado. Toque na foto ou no nome para abrir o perfil.</p></div><div class="v6-btns"><button type="button" data-v6-slide="-1" aria-label="Edições anteriores">←</button><button type="button" data-v6-slide="1" aria-label="Próximas edições">→</button></div></div><div class="bdf-carousel-mask"><div id="v6champScroll" class="bdf-editions" aria-label="Carrossel de conquistas de 2026">${markup}${entries.length>2?entries.map(e=>item(e,true)).join(''):''}${!entries.length?'<p class="hint">Os campeões de 2026 aparecerão quando os títulos forem cadastrados.</p>':''}</div></div><p class="bdf-ed-note">As conquistas sem chaveamento verificado continuam contabilizadas, sem inventar edições.</p>`;
 }
 function bdfPreviewHtml(entry){
- const b=entry.bracket;if(!b){return `<div class="bdf-pop-head">${esc(entry.name)}<span>2026</span></div><p class="bdf-pop-stat">Edição ainda não vinculada. Cadastre o número da BDF e o chaveamento em <b>Admin → Chaveamentos</b>.</p><button class="bdf-pop-btn" data-bdf-profile="${esc(entry.mc?.id||'')}">Ver perfil do MC</button>`}
+ const b=entry.bracket;
+ const header=`<div class="bdf-pop-head">${esc(entry.name)}<span>${esc(entry.ordinal+' de '+entry.titleCount+' títulos · 2026')}</span></div>`;
+ if(!b)return header+`<p class="bdf-pop-stat">Título registrado no acervo, mas ainda sem edição identificada. O ADM poderá vincular um chaveamento publicado ao título correspondente, sem alterar a contagem.</p><button class="bdf-pop-btn" data-bdf-profile="${esc(entry.mc?.id||'')}">Ver perfil do MC</button>`;
  const info=bdfRoundSummary(b),matches=info.matches.slice(0,3),more=info.matches.length-3;
- return `<div class="bdf-pop-head">${esc(bdfEditionLabel(b))}<span>${esc(b.players.length+' MCs')}</span></div><div class="bdf-pop-stat">Campeão:<b>${esc(info.winner||'A definir')}</b></div><div class="bdf-pop-stat">Vice:<b>${esc(info.vice||'A definir')}</b></div><div class="bdf-pop-stat">Confrontos:<b>${info.matches.length} / ${b.players.length-1}</b></div><div class="bdf-pop-label">Batalhas ${info.matches.length?'registradas':'pendentes'}</div>${matches.map(x=>`<div class="bdf-pop-match"><span class="${x.result.winner===x.a?'bdf-win':''}">${esc(x.a)}</span><strong>${esc(x.result.score)}</strong><span class="${x.result.winner===x.c?'bdf-win':''}">${esc(x.c)}</span></div>`).join('')}${more>0?`<small>+${more} confronto(s) registrado(s)</small>`:''}${!matches.length?'<small>Os placares ainda não foram cadastrados.</small>':''}<button class="bdf-pop-btn" data-bdf-full="${esc(b.id)}">Ver chaveamento completo</button>`;
+ return header+`<div class="bdf-pop-stat">Edição:<b>${esc(entry.edition)}</b></div><div class="bdf-pop-stat">Campeão:<b>${esc(info.winner||'A definir')}</b></div><div class="bdf-pop-stat">Vice:<b>${esc(info.vice||'A definir')}</b></div><div class="bdf-pop-label">Batalhas ${info.matches.length?'registradas':'pendentes'}</div>${matches.map(x=>`<div class="bdf-pop-match"><span class="${x.result.winner===x.a?'bdf-win':''}">${esc(x.a)}</span><strong>${esc(x.result.score)}</strong><span class="${x.result.winner===x.c?'bdf-win':''}">${esc(x.c)}</span></div>`).join('')}${more>0?'<small>+'+more+' confronto(s) registrado(s)</small>':''}<button class="bdf-pop-btn" data-bdf-full="${esc(b.id)}">Ver chaveamento completo</button><button class="bdf-pop-btn" data-bdf-profile="${esc(entry.mc.id)}">Ver perfil</button>`;
 }
 function bdfPopup(){let p=document.getElementById('bdfEditionPeek');if(!p){p=document.createElement('div');p.id='bdfEditionPeek';p.className='bdf-pop';p.hidden=true;document.body.appendChild(p);p.addEventListener('mouseenter',()=>clearTimeout(bdfPeekTimer));p.addEventListener('mouseleave',()=>bdfClosePeek())}return p}
 function bdfShowPeek(id,anchor){const item=(window._bdfEntries||[]).find(x=>x.id===id);if(!item||!anchor)return;clearTimeout(bdfPeekTimer);let p=bdfPopup();p.innerHTML=bdfPreviewHtml(item);p.hidden=false;bdfOpenedEntry=id;document.querySelectorAll('[data-bdf-peek]').forEach(x=>x.setAttribute('aria-expanded',String(x.dataset.bdfPeek===id)));const rc=anchor.getBoundingClientRect(),w=p.getBoundingClientRect().width,h=p.getBoundingClientRect().height;let left=Math.max(10,Math.min(window.innerWidth-w-10,rc.left+(rc.width-w)/2)),top=rc.bottom+9;if(top+h>window.innerHeight-8)top=Math.max(8,rc.top-h-9);p.style.left=left+'px';p.style.top=top+'px';}
@@ -1309,6 +1308,7 @@ document.addEventListener('mouseover',e=>{const a=e.target.closest?.('[data-bdf-
 document.addEventListener('mouseout',e=>{const a=e.target.closest?.('[data-bdf-peek]');if(a&&!a.contains(e.relatedTarget)){bdfPeekTimer=setTimeout(()=>{const p=document.getElementById('bdfEditionPeek');if(!p||!p.matches(':hover'))bdfClosePeek()},250)}});
 document.addEventListener('focusin',e=>{const a=e.target.closest?.('[data-bdf-peek]');if(a){bdfPausedUntil=Date.now()+6000;bdfShowPeek(a.dataset.bdfPeek,a)}});
 document.addEventListener('click',e=>{
+ const pp=e.target.closest?.('[data-bdf-profile]');if(pp){e.preventDefault();e.stopImmediatePropagation();bdfClosePeek();profile(pp.dataset.bdfProfile);return}
  const p=e.target.closest?.('[data-bdf-peek]');if(p){e.preventDefault();bdfPausedUntil=Date.now()+9000;if(bdfOpenedEntry===p.dataset.bdfPeek)bdfClosePeek();else bdfShowPeek(p.dataset.bdfPeek,p);return}
  const f=e.target.closest?.('[data-bdf-full]');if(f){e.preventDefault();bdfOpenFull(f.dataset.bdfFull);return}
  const pr=e.target.closest?.('[data-bdf-profile]');if(pr){bdfClosePeek();profile(pr.dataset.bdfProfile);return}
@@ -1377,7 +1377,7 @@ function v8MCLinks(m){
  if(!bs.length)return '';
  return `<section class="v8-mc-chaves"><h3>Edições e títulos associados</h3><p class="hint">Esses títulos já faziam parte da contagem do MC.</p>${bs.map(b=>`<div class="v8-mc-link"><div><b>${esc(bdfEditionLabel(b))}</b><small>${esc(v8TitleLinkLabel(b.titleLink))}${b.status!=='published'?' · rascunho não público':''}</small></div><button class="btn" data-bdf-full="${esc(b.id)}">Ver chaveamento</button></div>`).join('')}</section>`;
 }
-const v8SettingsDefaults={carouselOn:true,carouselSpeed:1,avatarY:35,cardBadges:true,galleryCoverHeight:280,cardRadius:14,showLinks:true};
+const v8SettingsDefaults={carouselVisible:true,carouselOn:true,carouselSpeed:1,avatarY:35,cardBadges:true,galleryCoverHeight:280,cardRadius:14,showLinks:true};
 function v8Settings(){return {...v8SettingsDefaults,...(CFG.v8||{})}}
 function v8ApplySettings(){
  const z=v8Settings();document.documentElement.style.setProperty('--v8-avatar-y',z.avatarY+'%');
@@ -1394,7 +1394,7 @@ admRender=function(){
   document.getElementById('adm').innerHTML=`<div class="asheet"><div class="bar" style="justify-content:space-between"><h2>Ranks editáveis</h2><button class="btn" id="admClose">Fechar painel</button></div>${v6AdminTabs()}<p class="hint">Crie ou remova ranks sem alterar os 29 MCs e os títulos registrados. Um rank começa em zero títulos e serve como base do ranking. Alterações reorganizam as classificações automaticamente.</p>${tiers}<div class="bar"><button class="btn on" data-v8-add-tier>+ Adicionar rank</button><button class="btn" data-v8-reset-tiers>Restaurar ranks V7</button></div><p class="hint">Os mínimos devem ser diferentes; o sistema ajusta a ordem de forma crescente.</p></div>`;
  } else if(admTab==='v8'){
   const v=v8Settings();
-  document.getElementById('adm').innerHTML=`<div class="asheet"><div class="bar" style="justify-content:space-between"><h2>Personalização geral</h2><button class="btn" id="admClose">Fechar painel</button></div>${v6AdminTabs()}<p class="hint">Controles extras da prévia V8. As outras abas permitem editar MCs e títulos, ranks, aparência, layout, música, agenda, galeria, site, edições e histórico.</p><div class="v8-custom-grid"><label><input type="checkbox" data-v8-setting="carouselOn" ${v.carouselOn?'checked':''}> Carrossel giratório</label><label>Velocidade do carrossel <select data-v8-setting="carouselSpeed"><option value="0.5" ${v.carouselSpeed==0.5?'selected':''}>Lenta</option><option value="1" ${v.carouselSpeed==1?'selected':''}>Normal</option><option value="1.75" ${v.carouselSpeed==1.75?'selected':''}>Rápida</option></select></label><label>Enquadramento vertical dos rostos (%)<input type="range" min="0" max="100" data-v8-setting="avatarY" value="${v.avatarY}"></label><label>Altura das fotos da galeria (px)<input type="range" min="180" max="440" data-v8-setting="galleryCoverHeight" value="${v.galleryCoverHeight}"></label><label>Arredondamento dos cards (px)<input type="range" min="0" max="32" data-v8-setting="cardRadius" value="${v.cardRadius}"></label><label><input type="checkbox" data-v8-setting="cardBadges" ${v.cardBadges?'checked':''}> Mostrar indicadores nos cards</label><label><input type="checkbox" data-v8-setting="showLinks" ${v.showLinks?'checked':''}> Mostrar chaveamentos associados no card</label></div><p class="hint">As alterações são salvas no navegador. Exporte um backup antes de testar novas configurações.</p><div class="bar"><button class="btn" data-v8-reset-settings>Restaurar estas configurações</button><button class="btn on" data-bdf-export>Exportar backup</button></div></div>`;
+  document.getElementById('adm').innerHTML=`<div class="asheet"><div class="bar" style="justify-content:space-between"><h2>Personalização geral</h2><button class="btn" id="admClose">Fechar painel</button></div>${v6AdminTabs()}<p class="hint">Controles extras da prévia V8. As outras abas permitem editar MCs e títulos, ranks, aparência, layout, música, agenda, galeria, site, edições e histórico.</p><div class="v8-custom-grid"><label><input type="checkbox" data-v8-setting="carouselVisible" ${v.carouselVisible?'checked':''}> Exibir Histórico de Campeões 2026</label><label><input type="checkbox" data-v8-setting="carouselOn" ${v.carouselOn?'checked':''}> Carrossel giratório</label><label>Velocidade do carrossel <select data-v8-setting="carouselSpeed"><option value="0.5" ${v.carouselSpeed==0.5?'selected':''}>Lenta</option><option value="1" ${v.carouselSpeed==1?'selected':''}>Normal</option><option value="1.75" ${v.carouselSpeed==1.75?'selected':''}>Rápida</option></select></label><label>Enquadramento vertical dos rostos (%)<input type="range" min="0" max="100" data-v8-setting="avatarY" value="${v.avatarY}"></label><label>Altura das fotos da galeria (px)<input type="range" min="180" max="440" data-v8-setting="galleryCoverHeight" value="${v.galleryCoverHeight}"></label><label>Arredondamento dos cards (px)<input type="range" min="0" max="32" data-v8-setting="cardRadius" value="${v.cardRadius}"></label><label><input type="checkbox" data-v8-setting="cardBadges" ${v.cardBadges?'checked':''}> Mostrar indicadores nos cards</label><label><input type="checkbox" data-v8-setting="showLinks" ${v.showLinks?'checked':''}> Mostrar chaveamentos associados no card</label></div><p class="hint">As alterações são salvas no navegador. Exporte um backup antes de testar novas configurações.</p><div class="bar"><button class="btn" data-v8-reset-settings>Restaurar estas configurações</button><button class="btn on" data-bdf-export>Exportar backup</button></div></div>`;
  } else v8OldAdmRender();
  const tabs=document.querySelector('#adm .atabs');
  if(tabs){if(!tabs.querySelector('[data-at="niv"]'))tabs.insertAdjacentHTML('beforeend',`<button class="btn ${admTab==='niv'?'on':''}" data-at="niv">Ranks</button>`);
