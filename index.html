@@ -697,7 +697,8 @@ async function boot(){
  data=j.data;EV=j.events||[];LOG=[];GAL=j.gallery||[];BRACKETS=j.brackets||[];
  CHAMPS=j.champions2026||data.filter(m=>(m.titles?.['2026']||0)>0).map(m=>m.id);
  CFG=Object.assign({},CD,j.cfg||{});if(j.cfg?.tiers)TIERS=j.cfg.tiers;TIERS=v8NormalizeTiers(TIERS);
- const btn=document.getElementById('admBtn');if(btn){btn.hidden=false;btn.textContent='Área administrativa';}
+ const btn=document.getElementById('admBtn');if(btn){btn.hidden=false;btn.textContent=LOCAL_PREVIEW?'⚙ ADM DE TESTE — SEM SENHA':'Área administrativa';}
+ if(LOCAL_PREVIEW){canAdmin=true;editing=true;document.getElementById('adm').classList.add('open');const warning=document.createElement('div');warning.style.cssText='position:sticky;top:0;z-index:9998;background:#6a3a00;color:#fff;padding:10px 16px;text-align:center;font-weight:bold';warning.textContent='LAB03.1 — AMBIENTE LOCAL DE TESTE · alterações ficam em rascunho neste navegador; produção protegida';document.body.prepend(warning);}
  render();
 }
 const KEY='foice_v1';
@@ -706,7 +707,7 @@ const SEED=[
  {id:'a2',name:'MC Exemplo Dois',city:'Cidade',photo:'',titles:{2022:1,2023:2,2024:3,2025:1}},
  {id:'a3',name:'MC Exemplo Três',city:'Cidade',photo:'',titles:{2024:2,2025:1}}
 ];
-const LOCAL_PREVIEW=false; // V9 pública: o servidor valida cada publicação e a permissão de administrador. 
+const LOCAL_PREVIEW=location.protocol==='file:'; // Somente arquivo local: teste isolado sem autenticação. Servidor continua protegido. 
  let data=[],canAdmin=false,sort='total',editing=false,filt='';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
