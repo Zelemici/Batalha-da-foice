@@ -57,13 +57,30 @@ function galleryCards(){
   body.innerHTML='<div class="mem-card-topline"><span class="mem-date">'+escapeHTML(date)+'</span><span aria-hidden="true">↗</span></div><h3>'+escapeHTML(item.title||'Registro histórico')+'</h3><p>'+escapeHTML(item.description||'Registro da roda cultural.')+'</p>'+(linked.length?'<div class="mem-card-people">'+linked.map(m=>'<span>'+escapeHTML(m.name)+'</span>').join('')+'</div>':'');
  }
 }
+// Esconde áreas de outras páginas com prioridade sobre os grids do layout
+// Arquivo. A propriedade [hidden] sozinha pode perder para display: grid!important.
+function enforceRoute(){
+ const pg=window._pg||'home';
+ const routes={'#list':'ranking','#sortbar':'ranking','#legend':'ranking','#more':'ranking',
+  '#pgHome':'home','#pgRec':'recordes','#pgMem':'memoria','#pgBrackets':'chaves',
+  '#pgCal':'calendario','#pgAbout':'sobre','#pgAnnual':'anual','#pgPriv':'privacidade','#pgTerms':'termos'};
+ for(const [selector,target] of Object.entries(routes)){
+  const element=$(selector);if(!element)continue;
+  const visible=pg===target;
+  element.hidden=!visible;
+  if(visible)element.style.removeProperty('display');
+  else element.style.setProperty('display','none','important');
+ }
+ const duplicate=$('#top2');
+ if(duplicate){duplicate.hidden=true;duplicate.style.setProperty('display','none','important');}
+}
 const previousRender=render;
 render=function(){
  // O arquivo de referência inicia pelo Arquivo de Guerra. Isto vale
  // para a prévia LAB03.1, sem persistir ou publicar a escolha no servidor.
  if(!initialized){initialized=true;window._lab03Visual='archive';}
  previousRender();
- shell();galleryCards();categoryTabs();zeroTitleSection();
+ shell();categoryTabs();zeroTitleSection();enforceRoute();
 };
 document.addEventListener('click',e=>{
  const tab=e.target.closest('[data-lab031-rank-view]');
