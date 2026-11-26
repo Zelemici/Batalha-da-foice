@@ -80,6 +80,23 @@ assert(!revised.cfg.v10.manualDuels.some(x=>String(x.id).startsWith('hist2026-')
 assert(!revised.cfg.v10.historicalBrackets.some(x=>String(x.id).startsWith('hist2026-')),'Chaves antigas incorretas são retiradas da prévia');
 assert(revised.cfg.v10.editionArchive.createdProfiles.some(x=>x.name==='Vitin'),'Adversário sem título mencionado no registro antigo não é apagado do acervo');
 
+const previous=structuredClone(original);
+const knownFromPrevious=[
+ ['Bruno Rodriguês',1],['Jeffinho',1],['Brandon',2],['Maldonado',4],
+ ['JR',1],['BOB',7],['Japa',1],['JVV',1],['Mad Dog',6],['Jaime',3],
+ ['Naan',1],['Son',3],['Ezinho',1],['Valdir',1],['LK',1],['Mopa',1],
+ ['Rafael',1],['Amaury',1],['Vitin',0],['Pelé',0]
+];
+previous.data.push(...knownFromPrevious.map(([name,titles],i)=>({id:'hist2026-prior-'+i,name,city:'',photo:'',titles:{},unknownTitles:titles})));
+const fromPrevious=apply(previous);
+assert.equal(fromPrevious.data.length,65,'49 perfis anteriores + 16 novos; sem cópias de JVV/JP/MCs');
+const expectedNew=['Danillo','MC Mensageiro','Jacaré','Lozz','Lorenzo','Ajayo','Bruno','Mutuca','Mont','TH','Jotinha','Goiaba','Jamal','Magnata','MAX','Debochado'];
+const actualNew=fromPrevious.cfg.v10.editionArchive.createdProfiles.map(x=>x.name);
+assert.deepEqual([...actualNew].sort(),[...expectedNew].sort(),'Reportar exatamente os 16 MCs adicionais à recuperação anterior');
+for(const old of previous.data)assert.equal(core.titleCount(fromPrevious.data.find(x=>x.id===old.id)),core.titleCount(old),'Preservar também títulos dos 20 MCs recuperados anteriormente: '+old.name);
+assert(fromPrevious.data.find(m=>m.name==='BOB').archiveEditionIds.filter(e=>e.status==='conferir').length>=3,'BOB 7 vs 10 edições: nenhum título novo silencioso');
+console.log('NOVOS 16 EM RELAÇÃO AOS 49 PERFIS ANTERIORES: '+actualNew.join(' | '));
+
 const duplicate=apply({data:[{id:'already',name:'MC Jeffinho',titles:{2022:2}}],cfg:{}});
 assert.equal(duplicate.data.filter(m=>archive.canonical(m.name)==='Jeffinho').length,1,'MC Jeffinho vira Jeffinho sem duplicar');
 assert.equal(core.titleCount(duplicate.data.find(x=>x.id==='already')),2,'Contagem diferente deve ser preservada');
