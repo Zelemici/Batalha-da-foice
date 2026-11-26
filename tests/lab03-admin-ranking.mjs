@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const home=html.match(/<div id="pgHome">[\s\S]*?<div id="pgRec">/)?.[0];
+assert(home,'A seção inicial deve existir');
+assert.equal((html.match(/id="top2"/g)||[]).length,1,'Manter nó legado para compatibilidade');
+assert.match(home,/id="top2" hidden aria-hidden="true"/,'A listagem redundante precisa estar oculta');
+assert.doesNotMatch(home,/Todos os MCs do ranking/,'A página inicial não deve repetir cabeçalho e ranking');
+assert.match(home,/data-go="ranking"/,'Deve haver caminho para o ranking completo');
+assert.match(html,/\$\('#top2'\)\.innerHTML='';/,'Não calcular cards duplicados em segundo contêiner');
+assert.match(html,/id="list"/,'O ranking completo continua existente');
+assert.match(html,/data-bdf-close-admin-note/,'A falha de configuração do servidor deve ficar clara');
+assert.match(html,/FIREBASE_PROJECT_ID/);
+assert.match(html,/BDF_ADMIN_UID/);
+assert.match(html,/BDF_KV/);
+assert.match(html,/canAdmin=false/,'Padrão deve bloquear edição');
+assert.doesNotMatch(html,/canAdmin\s*=\s*true\s*;\s*\/\//,'Não liberar acesso em modo de testes');
+console.log('PASSOU: ranking único na navegação, acesso ao ranking e ADM protegido por servidor.');
