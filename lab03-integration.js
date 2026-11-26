@@ -66,7 +66,7 @@ function enforceRoute(){
   '#pgCal':'calendario','#pgAbout':'sobre','#pgAnnual':'anual','#pgPriv':'privacidade','#pgTerms':'termos'};
  for(const [selector,target] of Object.entries(routes)){
   const element=$(selector);if(!element)continue;
-  const visible=pg===target;
+  const visible=pg===target&&!(category==='zero'&&['#list','#sortbar','#legend','#more'].includes(selector));
   element.hidden=!visible;
   if(visible)element.style.removeProperty('display');
   else element.style.setProperty('display','none','important');
