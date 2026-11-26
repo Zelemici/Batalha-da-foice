@@ -10,7 +10,7 @@ let selected='regional',search='',filterYear='',limit=24;
 const specialFor=n=>a()?.catalog?.find(e=>e.number===n)?.special;
 const badge=(e,m)=>{
  const sp=specialFor(e.number);
- const active=sp&&(!sp.only||globalThis.BDFArchive.norm(sp.only)===globalThis.BDFArchive.norm(m?.name||''));
+ const active=sp&&(!sp.only||globalThis.BDFArchive.canonical(sp.only)===globalThis.BDFArchive.canonical(m?.name||''));
  return '<span class="arc-ed-chip'+(active?' arc-chip-'+h(sp.id):'')+(e.status==='conferir'?' arc-chip-review':'')+'" title="'+h(e.status==='conferir'?'Associação ou contagem a conferir':active?sp.name:'Conquista identificada')+'">#'+e.number+(e.status==='conferir'?' ?':'')+'</span>';
 };
 bdfEditionChips=function(m){
@@ -26,7 +26,7 @@ function categoryMembers(cat){
   if(row.special?.id!==cat)continue;
   for(const claim of row.claims)for(const id of claim.mcIds){
    const m=find(id);if(!m)continue;
-   if(row.special.only&&globalThis.BDFArchive.norm(m.name)!==globalThis.BDFArchive.norm(row.special.only))continue;
+   if(row.special.only&&globalThis.BDFArchive.canonical(m.name)!==globalThis.BDFArchive.canonical(row.special.only))continue;
    const item=groups.get(id)||{m,editions:[],notes:[]};
    if(!item.editions.includes(row.number))item.editions.push(row.number);
    groups.set(id,item);
