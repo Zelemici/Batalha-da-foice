@@ -1,0 +1,19 @@
+name: LAB03.1 - exportar copia de teste
+on:
+  push:
+    branches:
+      - lab/lab03-1-source-snapshot
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exportar copia do repositorio para o laboratorio
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab031-repositorio-completo
+          path: .
+          include-hidden-files: false
+          retention-days: 1
