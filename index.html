@@ -924,7 +924,7 @@ function profile(id){
 }
 function form(id){
  const m=id?data.find(x=>x.id==id):{name:'',city:'',photo:'',titles:{}};
- const rows=Object.entries(m.titles);if(!rows.length)rows.push([new Date().getFullYear(),1]);
+ const rows=Object.entries(m.titles);if(!rows.length)rows.push([new Date().getFullYear(),0]);
  window._ph=m.photo;window._cut=!!m.cut;
  open(`<h2 style="margin:30px 0 0;font-size:30px">${id?'Editar MC':'Novo MC'}</h2>
  <label>Vulgo</label><input id="fN" value="${esc(m.name)}">
@@ -1009,7 +1009,7 @@ document.addEventListener('click',e=>{
  if(t.hasAttribute('data-pub'))return pubForm();
  if(t.hasAttribute('data-bulk')){let n=0;$('#bulk').value.split('\n').forEach((l,i)=>{const p=l.split(';').map(x=>x.trim());if(!p[0])return;const ti={};(p[2]||'').replace(/(\d{4})\s*:\s*(\d+)/g,(_,y,q)=>{ti[y]=+q});const m=data.find(x=>x.name.toLowerCase()==p[0].toLowerCase());if(m)Object.assign(m.titles,ti);else data.push({id:'m'+Date.now()+i,name:p[0],city:p[1]||'',photo:'',titles:ti});n++});lg('Cadastro em lote: '+n+' MC(s)');save();render();toast(n+' MC(s) processado(s).');return}
  if(t.hasAttribute('data-rm'))return t.closest('.row').remove();
- if(t.id=='addRow')return $('#fR').insertAdjacentHTML('beforeend',rowH('',1));
+ if(t.id=='addRow')return $('#fR').insertAdjacentHTML('beforeend',rowH('',0));
  if(t.dataset.edit&&editing)return form(t.dataset.edit);
  if(t.dataset.del&&editing){if(confirm('Excluir este MC?')){const dm=data.find(m=>m.id==t.dataset.del);lg('Excluiu o MC '+(dm?dm.name:''));data=data.filter(m=>m.id!=t.dataset.del);save();close();render()}return}
  if(t.dataset.save!==undefined&&editing){
@@ -1135,9 +1135,9 @@ function memoryRender(){
  const pub=publishedMem(),ft=window._memType||'',fy=window._memYear||'',fm=window._memMC||'',fq=(window._memQuery||'').toLowerCase();
  const ys=[...new Set(pub.map(g=>g.year||(g.date||'').slice(0,4)).filter(Boolean))].sort().reverse();
  const mc=[...data].sort((a,b)=>a.name.localeCompare(b.name));
- const pick=pub.filter(g=>(!ft||g.type===ft)&&(!fy||String(g.year||(g.date||'').slice(0,4))===fy)&&(!fm||(g.mcIds||[]).includes(fm))&&(!fq||(g.title+' '+(g.description||'')).toLowerCase().includes(fq))).sort((a,b)=>String(b.date||b.year||'').localeCompare(String(a.date||a.year||'')));
- const cards=L=>L.map(g=>`<button class="mem-card" data-gview="${esc(g.id)}" aria-label="Abrir ${esc(g.title)}"><div class="mem-cover">${memCover(g)}<span class="mem-label">${esc(MEMT[g.type]||'Registro')}</span></div><div class="mem-bd"><span class="v6-open">TOQUE PARA ABRIR ↗</span></div></button>`).join('');
- const section=(title,description,L)=>`<section class="v6-category"><h3>${title}</h3><p class="hint">${description}</p>${L.length?`<div class="mem-grid">${cards(L)}</div>`:`<div class="mem-empty">Ainda não há registros publicados nesta seção.</div>`}</section>`;
+ const pick=pub.filter(g=>(!ft||g.type===ft)&&(!fy||String(g.year||(g.date||'').slice(0,4))===fy)&&(!fm||(g.mcIds||[]).includes(fm))&&(!fq||(g.title+' '+(g.description||'')+' '+(g.mcIds||[]).map(id=>data.find(m=>m.id===id)?.name||'').join(' ')).toLowerCase().includes(fq))).sort((a,b)=>String(b.date||b.year||'').localeCompare(String(a.date||a.year||'')));
+ const cards=L=>L.map(g=>{const tagged=(g.mcIds||[]).map(id=>data.find(m=>m.id===id)).filter(Boolean);return `<button class="mem-card" data-gview="${esc(g.id)}" aria-label="Abrir ${esc(g.title||'registro histórico')}"><div class="mem-cover">${memCover(g)}<span class="mem-label">${esc(MEMT[g.type]||'Registro')}</span></div><div class="mem-bd"><div class="mem-card-topline"><span class="mem-date">${esc(memLabel(g))}</span><span class="mem-open" aria-hidden="true">↗</span></div><h3>${esc(g.title||'Registro histórico')}</h3><p>${esc(g.description||'Toque para conhecer este registro da roda.')}</p>${tagged.length?`<div class="mem-tags">${tagged.slice(0,3).map(m=>`<span class="mem-tag">@${esc(m.name)}</span>`).join('')}${tagged.length>3?`<span class="mem-tag">+${tagged.length-3}</span>`:''}</div>`:''}<span class="mem-card-cta">Ver registro <span aria-hidden="true">→</span></span></div></button>`}).join('');
+ const section=(title,description,L)=>`<section class="v6-category"><div class="mem-category-heading"><div><h3>${title}</h3><p class="hint">${description}</p></div><span class="mem-section-total">${L.length} ${L.length===1?'registro':'registros'}</span></div>${L.length?`<div class="mem-grid">${cards(L)}</div>`:`<div class="mem-empty"><strong>Arquivo em construção</strong><p>Nenhum registro publicado nesta categoria por enquanto.</p></div>`}</section>`;
  const select=(id,label,opts)=>`<select id="${id}" aria-label="${label}">${opts}</select>`;
  const ftO=['',...Object.keys(MEMT)].map(t=>`<option value="${t}" ${ft===t?'selected':''}>${t?MEMT[t]:'Todos os tipos'}</option>`).join('');
  const yrO='<option value="">Todos os anos</option>'+ys.map(y=>`<option value="${esc(y)}" ${String(fy)===String(y)?'selected':''}>${esc(y)}</option>`).join('');
