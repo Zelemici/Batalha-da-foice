@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/smoke.mjs && node tests/v10.mjs && node tests/history-2026.mjs && node tests/gallery-titles.mjs"
+    "test": "node tests/smoke.mjs && node tests/v10.mjs && node tests/history-2026.mjs && node tests/archive-ui.mjs && node tests/gallery-titles.mjs && node tests/carousel-2026.mjs && node --check lab03-integration.js && node tests/lab03-visual.mjs && node tests/lab03-admin-ranking.mjs && node tests/lab03-gallery.mjs"
   }
 }

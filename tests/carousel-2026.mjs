@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import '../lab03-carousel.js';
+const build=globalThis.BDFLab03Carousel.createEntries;
+const mcs=[{id:'a',name:'Alfa',titles:{2026:3}},{id:'b',name:'Beta',titles:{2026:1}},{id:'c',name:'Gama',titles:{2025:20}},{id:'d',name:'Delta',titles:{2026:0}}];
+const entries=build(mcs,[]);
+assert.equal(entries.length,4,'Uma entrada por título de 2026, e não apenas por MC');
+assert.equal(entries.filter(x=>x.mc.id==='a').length,3);
+assert(entries.every(x=>x.edition==='Edição pendente'&&!x.bracket));
+assert.deepEqual(entries.filter(x=>x.mc.id==='a').map(x=>x.ordinal),[1,2,3]);
+assert.equal(mcs[0].titles[2026],3,'A exibição não pode modificar títulos');
+const linked={id:'ch1',status:'published',players:['Alfa','Beta','Gama','Delta'],
+  results:{'0-0':{winner:'Alfa'},'0-1':{winner:'Gama'},'1-0':{winner:'Alfa'}},
+  title:'Edição 200',editionNumber:'200',titleLink:{mcId:'a',year:'2026',ordinal:2}};
+const withLink=build(mcs,[linked]);
+assert.equal(withLink.length,4,'Vincular uma chave não aumenta a contagem');
+assert.equal(withLink.filter(x=>x.bracket).length,1);
+assert.equal(withLink.find(x=>x.mc.id==='a'&&x.ordinal===2).edition,'BDF #200');
+assert(withLink.filter(x=>x.mc.id==='a'&&!x.bracket).every(x=>x.edition==='Edição pendente'));
+assert.equal(build(mcs,[{...linked,status:'draft'}]).filter(x=>x.bracket).length,0,'Rascunho não deve surgir como conquista publicada');
+assert.equal(build(mcs,[{...linked,results:{...linked.results,'1-0':{winner:'Gama'}}}]).filter(x=>x.bracket).length,0,'Campeão inconsistente não identifica edição');
+assert.equal(build(mcs,[linked,{...linked,id:'ch2'}]).filter(x=>x.bracket).length,0,'Vínculos duplicados precisam permanecer pendentes');
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+assert(html.includes('<script src="lab03-carousel.js"></script>'),'Módulo deve ser carregado no HTML');
+assert(html.includes('carouselVisible'),'Controle do ADM deve existir');
+assert(html.includes('data-bdf-profile'),'Perfil deve ser acessível pelo card');
+assert(html.includes('data-v6-slide'),'Setas de navegação mantidas');
+const start=html.indexOf('function bdfCarouselEntries(){'),end=html.indexOf('\nfunction renderChampionsV6(){',start);
+assert(start>=0&&end>start);
+const context={data:mcs,BRACKETS:[linked],BDFLab03Carousel:globalThis.BDFLab03Carousel,bdfCarouselOrder:null,Math};
+vm.createContext(context);vm.runInContext(html.slice(start,end),context);
+assert.equal(vm.runInContext('bdfCarouselEntries().length',context),4);
+console.log('LAB03.1: títulos 2026, múltiplas vitórias, pendências, perfis, links e controle ADM OK.');
