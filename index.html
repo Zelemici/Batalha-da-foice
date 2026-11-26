@@ -1253,8 +1253,14 @@ function bdfCarouselEntries(){
   return {id:'br:'+b.id,bracket:b,name:info.winner||'A definir',mc:m||null,edition:bdfEditionLabel(b),status:info.winner?'Concluída':'Em andamento'};
  });
  const covered=new Set(registered.filter(e=>e.mc).map(e=>e.mc.id));
- const unlinked=CHAMPS.map(id=>data.find(m=>m.id===id)).filter(Boolean).filter(m=>!covered.has(m.id)).map(m=>({id:'mc:'+m.id,mc:m,name:m.name,edition:'BDF · edição pendente',status:'Registro a completar'}));
- const entries=[...registered,...unlinked];
+ // Todos os campeões com títulos registrados em 2026 entram automaticamente.
+ // A seleção legada do ADM é preservada somente para campeões que já têm título em 2026.
+ const winners2026=data.filter(m=>Number(m.titles?.['2026']||0)>0);
+ const unlinked=winners2026.filter(m=>!covered.has(m.id)).map(m=>{
+  const count=Number(m.titles?.['2026']||0);
+  return {id:'mc:'+m.id,mc:m,name:m.name,edition:'2026 · edição pendente',status:count+' '+(count===1?'título registrado':'títulos registrados')};
+ });
+ const entries=[...registered,...unlinked]; // A falta de um chaveamento não oculta o campeão de 2026.
  if(!bdfCarouselOrder)bdfCarouselOrder=entries.map(x=>x.id).sort(()=>Math.random()-.5);
  return entries.sort((a,b)=>{const ai=bdfCarouselOrder.indexOf(a.id),bi=bdfCarouselOrder.indexOf(b.id);return (ai<0?999:ai)-(bi<0?999:bi)});
 }
