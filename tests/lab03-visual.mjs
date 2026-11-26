@@ -14,7 +14,7 @@ assert.match(css,/\.lab031-rank-tabs/);
 assert.match(css,/\.arc-overline/);
 assert.match(js,/data-lab031-rank-view/);
 assert.match(js,/GAL\.find/);
-assert.match(js,/if\(!window\._pv\)window\._pv='archive'/);
+assert.match(js,/window\._lab03Visual='archive'/);
 assert.doesNotMatch(js,/canAdmin\s*=\s*true/,'Prévia não pode autorizar ADM artificialmente');
 assert.doesNotMatch(js,/window\.fetch\s*=/,'Não substituir fetch global');
 assert.doesNotMatch(js,/fetch\(.*method:\s*'POST'/,'Integração visual não deve publicar dados');
