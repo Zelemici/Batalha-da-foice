@@ -591,8 +591,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 @media(prefers-reduced-motion:reduce){nav button,button.btn{transition:none!important}}
 </style>
 <link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="lab03-original-visual.css" data-lab031="visual-original">
 </head>
-<body>
+<body class="lab031-site">
 <div id="pvbar" class="abar" hidden style="top:36px;background:#7c3aed;color:#fff"></div>
 <div id="abar" class="abar" hidden>Modo admin ativo <button class="btn" data-abopen>Abrir painel</button><button class="btn" data-abexit>Sair do modo admin</button></div>
 <div class="wrap">
@@ -1480,5 +1481,6 @@ document.body.classList.add('intro');setTimeout(()=>document.body.classList.remo
 boot();
 </script>
 <script src="v10-ui.js"></script>
+<script src="lab03-integration.js"></script>
 </body>
 </html>
